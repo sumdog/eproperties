@@ -1,0 +1,125 @@
+<project name="eproperties" default="all" basedir=".">
+   
+   <!-- The equivalent of 'make all' -->
+   <target name="all" depends="init,assemble" />
+
+   <!-- Full build, deletes everything, and builds everything. -->
+   <target name="full" depends="init,clean" />
+
+   <property file="version.properties"/>
+
+   <!-- Initialize all build variables. -->
+   <target name="init">
+      <tstamp/>
+
+      <!-- useful to dump properties -->
+      <!-- echoproperties/ -->
+    </target>
+    
+    <path id="project.class.path">
+      <fileset dir="jars"> 
+          <include name="**/*.jar"/>
+      </fileset>
+    </path>
+    
+    <path id="javacc.class.path">
+      <fileset dir="javacc/4.2/"> 
+          <include name="javacc.jar"/>
+      </fileset>
+    </path>
+    
+    <target name="javacc">
+       <property name="javacc.output" value="gen/net/jmatrix/eproperties/parser/"/>
+       <mkdir dir="${javacc.output}"/>
+       <!-- This kinda sucks - don't want to ask others to have to 
+            install javacc to build, don't want to check in generated
+            code.  Solution is below.
+       <javacc target="src/net/jmatrix/eproperties/parser/EPropertiesParser.jj"
+               outputdirectory="${javacc.output}"
+               javacchome="/home/bemo/java/javacc-4.2/"
+       />
+       -->
+        
+        <!-- This works from the command line.
+        java -cp ~/java/javacc-4.2/bin/lib/javacc.jar javacc 
+        -OUTPUT_DIRECTORY=gen/net/jmatrix/eproperties/parser/ 
+        src/net/jmatrix/eproperties/parser/EPropertiesParser.jj
+        -->
+       <java classname="javacc">
+           <classpath refid="javacc.class.path"/>
+           <arg value="-OUTPUT_DIRECTORY=${javacc.output}"/>
+           <arg value="src/net/jmatrix/eproperties/parser/EPropertiesParser.jj"/>
+       </java>
+    </target>
+    
+    <!-- Compile -->
+    <target name="compile" depends="javacc"> 
+        <mkdir dir="build/classes" />
+
+        <javac destdir="build/classes" 
+            excludes="**/*.old" debug="true" target="1.5"> 
+           <classpath refid="project.class.path"/>
+           <src>
+               <pathelement location="src" />
+               <pathelement location="gen" />
+           </src>
+        </javac>
+
+        <copy todir="build/classes">
+           <fileset dir="src" includes="**/*.properties,**/*.png" />
+        </copy>
+    </target>
+    
+    <!-- Assemble creates the deployable artifacts, like jars, wars, zips -->
+    <target name="assemble" depends="compile,javadoc">
+        <copy todir="build/config">
+           <fileset dir="config" includes="**"/>
+        </copy>
+        <copy todir="build/jars">
+           <fileset dir="jars" includes="**"/>
+        </copy>
+        
+        <!-- docs -->
+        <copy todir="build/docs">
+            <fileset dir="docs" includes="manual/**"/>
+        </copy>
+        <echo message="Setting version to ${version}"/>
+        <replace dir="build/docs/manual" token="$${version}" value="${version}"/>
+        
+        
+        <copy todir="build/bin">
+           <fileset dir="bin" includes="**"/>
+        </copy>
+        <chmod perm="a+x">
+           <fileset dir="build/bin" includes="**"/>
+        </chmod>
+        
+        <jar destfile="build/${name}-${version}.jar"
+            basedir="build/classes" />
+    </target>
+    
+    <!--  Builds javadoc. -->
+    <target name="javadoc" depends="init">
+       <mkdir dir="build/docs/javadoc"/>
+        <!-- This is the page title, in head->title -->
+       <property name="TITLE" value="EProperties ${version}  generated ${TODAY}" />
+        <!-- this is the title on the page, with h1 or somethign -->
+       <property name="DOCTITLE" value="EProperties ${version} &lt;br/&gt; Generated ${TODAY}" />
+
+       <javadoc destdir="build/docs/javadoc" 
+                maxmemory="128m" private="true" 
+                author="true" windowtitle="${TITLE}" doctitle="${DOCTITLE}"
+                additionalparam="-linksource">
+           <fileset dir="." includes="src/**/*.java,gen/**/*.java" excludes="**/*.properties,**/*.jj"/>
+           <classpath refid="project.class.path"/>
+           
+           <!-- link to the sun javadoc -->
+           <link href="http://java.sun.com/j2se/1.5.0/docs/api/" />
+       </javadoc>
+         
+    </target>
+    
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+</project>
