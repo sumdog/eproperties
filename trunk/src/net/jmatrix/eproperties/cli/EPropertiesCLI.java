@@ -35,6 +35,9 @@ public class EPropertiesCLI {
          System.out.println ("Setting root logger to debug.");
          Logger logger=Logger.getLogger("");
          logger.setLevel(Level.FINEST);
+      } else {
+         Logger logger=Logger.getLogger("");
+         logger.setLevel(Level.INFO);
       }
       
       URL url=null;

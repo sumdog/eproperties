@@ -28,8 +28,14 @@
       </fileset>
     </path>
     
+    <target name="clean">
+        <delete dir="build"/>
+        <delete dir="dist-tmp"/>
+        <delete dir="dist"/>
+    </target>
+    
     <target name="javacc">
-       <property name="javacc.output" value="gen/net/jmatrix/eproperties/parser/"/>
+       <property name="javacc.output" value="build/gen/net/jmatrix/eproperties/parser/"/>
        <mkdir dir="${javacc.output}"/>
        <!-- This kinda sucks - don't want to ask others to have to 
             install javacc to build, don't want to check in generated
@@ -61,7 +67,7 @@
            <classpath refid="project.class.path"/>
            <src>
                <pathelement location="src" />
-               <pathelement location="gen" />
+               <pathelement location="build/gen" />
            </src>
         </javac>
 
@@ -94,8 +100,66 @@
            <fileset dir="build/bin" includes="**"/>
         </chmod>
         
-        <jar destfile="build/${name}-${version}.jar"
-            basedir="build/classes" />
+        <copy todir="build" file="release.txt"/>
+        <copy todir="build" file="version.properties"/>
+        
+        
+        <jar destfile="build/${name}-${version}.jar">
+            <fileset dir="build/classes" includes="**/**"/>
+            <manifest>
+              <!-- Who is building this jar? -->
+              <attribute name="Built-By" value="${user.name}"/>
+              <!-- Information about the program itself -->
+              <attribute name="Version" value="${version}"/>
+              <attribute name="SVN-Revision" value="xx"/>
+              <attribute name="Main-Class" value="net.jmatrix.eproperties.cli.EPropertiesCLI"/>
+            </manifest>
+        </jar>
+        
+        <!-- Make a version with commons-logging bundled in, and a proper
+             manifest. -->
+        <mkdir dir="build/dep-classes"/>
+        <unjar src="jars/commons-logging.jar" dest="build/dep-classes"/>
+        <jar destfile="build/${name}_deps-${version}.jar">
+            <fileset dir="build/dep-classes" includes="**/**" excludes="META-INF/**"/>
+            <fileset dir="build/classes" includes="**/**"/>
+            <manifest>
+              <!-- Who is building this jar? -->
+              <attribute name="Built-By" value="${user.name}"/>
+              <!-- Information about the program itself -->
+              <attribute name="Version" value="${version}"/>
+              <attribute name="SVN-Revision" value="xx"/>
+              <attribute name="Main-Class" value="net.jmatrix.eproperties.cli.EPropertiesCLI"/>
+            </manifest>
+        </jar>
+    </target>
+    
+    <!-- Creates distributable artifacts. -->
+    <target name="dist" depends="assemble">
+        <property name="build-id" value="${name}-${version}"/>
+        <property name="dist-tmp" value="dist-tmp/${build-id}"/>
+        <mkdir dir="${dist-tmp}"/>
+        
+        <!-- copy files to dist-tmp -->
+        <copy todir="dist-tmp/${build-id}/">
+           <fileset dir="build" includes="**/**" excludes="classes/**"/>
+        </copy>
+        
+        <mkdir dir="dist"/>
+        <!-- Create tar.gz -->
+        <tar destfile="dist/${build-id}.tar.gz" longfile="gnu" compression="gzip">
+            <tarfileset dir="dist-tmp/" filemode="755"
+                includes="${build-id}/bin/**" excludes="${build-id}/bin/**/*.bat"/>
+
+            <tarfileset dir="dist-tmp/"
+                includes="${build-id}/**" excludes="${build-id}/bin/**"/>
+        </tar>
+        <!-- Create .xip -->
+        <zip destfile="dist/${build-id}.zip">
+            <fileset dir="dist-tmp" includes="${build-id}/**"/>
+        </zip>
+        <!-- copy the jar, with dependencies, to the dist dir -->
+        <copy file="build/${name}_deps-${version}.jar" todir="dist"/>
     </target>
     
     <!--  Builds javadoc. -->
@@ -110,16 +174,11 @@
                 maxmemory="128m" private="true" 
                 author="true" windowtitle="${TITLE}" doctitle="${DOCTITLE}"
                 additionalparam="-linksource">
-           <fileset dir="." includes="src/**/*.java,gen/**/*.java" excludes="**/*.properties,**/*.jj"/>
+           <fileset dir="." includes="src/**/*.java,build/gen/**/*.java" excludes="**/*.properties,**/*.jj"/>
            <classpath refid="project.class.path"/>
            
            <!-- link to the sun javadoc -->
            <link href="http://java.sun.com/j2se/1.5.0/docs/api/" />
        </javadoc>
-         
-    </target>
-    
-    <target name="clean">
-        <delete dir="build"/>
     </target>
 </project>

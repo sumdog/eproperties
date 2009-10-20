@@ -49,7 +49,11 @@ public class ArgParser
    }
 
    public int size() {return args.length;}
-   public String getLastArg() {return args[args.length-1];}
+   public String getLastArg() {
+      if (args.length == 0)
+         return null;
+      return args[args.length-1];
+   }
 
    /**
     *

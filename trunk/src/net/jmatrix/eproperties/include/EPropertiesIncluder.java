@@ -29,7 +29,7 @@ public class EPropertiesIncluder {
    
    /** */
    public void registerLoader(PropertiesLoader upl) {
-      log.info("Registering loader "+upl.getClass().getName());
+      log.debug("Registering loader "+upl.getClass().getName());
       loaders.add(upl);
    }
    
