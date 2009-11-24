@@ -1,7 +1,7 @@
 <project name="eproperties" default="all" basedir=".">
    
    <!-- The equivalent of 'make all' -->
-   <target name="all" depends="init,assemble" />
+   <target name="all" depends="init,assemble,test" />
 
    <!-- Full build, deletes everything, and builds everything. -->
    <target name="full" depends="init,clean" />
@@ -76,6 +76,31 @@
         </copy>
     </target>
     
+    <!-- Compile JUnit tests-->
+    <target name="compile-tests" depends="compile"> 
+        <mkdir dir="build/test-classes" />
+
+        <javac destdir="build/test-classes" 
+            excludes="**/*.old" debug="true" target="1.5"> 
+           <classpath refid="project.class.path"/>
+           <classpath path="build/classes"/>
+           <!-- classpath>
+               <classpathelement refid="project.class.path"/>
+           </classpath -->
+           <src>
+               <pathelement location="test" />
+           </src>
+        </javac>
+
+        <copy todir="build/test-classes">
+           <fileset dir="test" includes="**/*.properties,**/*.png" />
+        </copy>
+        
+        <jar destfile="build/${name}-tests-${version}.jar">
+            <fileset dir="build/test-classes" includes="**/**"/>
+        </jar>
+    </target>
+    
     <!-- Assemble creates the deployable artifacts, like jars, wars, zips -->
     <target name="assemble" depends="compile,javadoc">
         <copy todir="build/config">
@@ -132,6 +157,34 @@
               <attribute name="Main-Class" value="net.jmatrix.eproperties.cli.EPropertiesCLI"/>
             </manifest>
         </jar>
+    </target>
+    
+    <target name="test" depends="compile-tests">
+        <mkdir dir="build/junit.report"/>
+        
+        <junit showoutput="yes" printsummary="yes">
+            <classpath>
+               <!-- fileset dir="ivy-lib/build">
+                  <include name="*.jar"/>
+                </fileset -->
+                <!-- need runtime stuff for oracle driver -->
+                <fileset dir="build/jars">
+                  <include name="*.jar"/>
+                </fileset>
+
+                <pathelement location="build/${name}-${version}.jar"/>
+                <pathelement location="build/${name}-tests-${version}.jar"/>
+            </classpath>
+
+            
+            <formatter type="plain"/>
+            
+            <batchtest todir="build/junit.report">
+              <fileset dir="test">
+                <include name="**/*Test.java"/>
+              </fileset>
+            </batchtest>
+        </junit>
     </target>
     
     <!-- Creates distributable artifacts. -->
