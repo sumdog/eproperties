@@ -11,13 +11,12 @@ import org.apache.commons.logging.*;
 
 /**
  * EProperties is the root properties object, and the core of the EProperties
- * system.  This obect extends the java.util.Propertis object - which is a 
+ * system.  This object extends the java.util.Propertis object - which is a 
  * critical feature of the system.  Many many classes and projects in the 
  * Java community are initialized by methods/constructors that take 
  * Properties objects.  All of these subsystems and libraries can also be
  * initialized using the EProperties system, because an EProperties object
  * is a Properties object. <p>
- * 
  * 
  * 
  * Need to synchronize all mutators, along with the save operations.  Don't 

@@ -151,12 +151,15 @@ public class CacheManager {
    
    /** */
    public InputStream getInputStream(InputStream is, URL url) {
-      return getInputStream(is, url.toExternalForm());
+      return getInputStream(is, (url == null? null:url.toExternalForm()));
    }
    
    /** */
    public InputStream getInputStream(InputStream is, String surl) {
       if (!ONLINE)
+         return is;
+      
+      if (surl == null)
          return is;
       
       // This is already a cache stream.
