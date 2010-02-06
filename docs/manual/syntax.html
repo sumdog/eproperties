@@ -347,13 +347,67 @@ the value can be defined after the key is used as a substitution value.</p>
 
 <h4><a name="nested.keys">Nested Key Substitution</a></h4>
 
-<p>Nested key substitution deals with keys of the form: ${foo${bar}}.  
-Complete explanation is TBD.</p>
+<p>Nested key substitution deals with keys of the form: ${foo${bar}}.</p>
+
+<p>In the case where nested substitutions are used, the substitutions
+are processed from the inside out.  The innermost substitutions are 
+resolved first - and the resultant value is used for further 
+substitutions.</p>
+<pre>
+# TBD: example!!
+</pre>
+
 
 <h4><a name="partial.complete">Partial vs. Complete Substitution</a></h4>
 
-<p>An explanation here is TBD.  (substitution as nested properties).</p>
+<p>
+A substitution can be partial or complete.  A partial substitution only 
+applies to String values, either individually, or as a member of a 
+List of Strings.  A partial substitution may look like this: </p>
+<pre>
+location=world!
+message=Hello ${location}
+</pre>
 
+A complete substitution is the complete substitution of one variable for 
+another.  In this case, the resultant value takes the form of the 
+source.  Consider the following example:
+<pre>
+dev={
+   host=test.jmatrix.net
+}
+prod={
+   host=prod.jmatrix.net
+}
+
+env=${prod}
+host=${env->host}
+</pre>
+
+<p>In the case above, the value for env will be a complete substitution.
+The resultant could be a String, a List, or a nested EProperties 
+object.  Above, env will be a nested properties object.</p>  
+
+<div class="output">
+---- listing ----
+dev= {
+  host=test.jmatrix.net
+}
+prod= {
+  host=prod.jmatrix.net
+}
+env= {
+  host=prod.jmatrix.net
+}
+host=prod.jmatrix.net
+---- end listing ----
+</div>
+
+<p>Note - partial substitutions do not make sense in this context.</p> 
+
+<p>Complete and partial substitutions use essentially the same syntax, 
+but a complete substitution brings new types of flexibility to your
+configuration.</p>
 
 <!-- ========================== INCLUSION ===================== -->
 
