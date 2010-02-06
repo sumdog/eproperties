@@ -1,7 +1,0 @@
-
-
-                          EProperties Release Notes
-
-
-1.0.0 - 10 Oct 2009
-   Initial Open Source Release
