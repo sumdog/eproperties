@@ -33,6 +33,8 @@ your own properties files.</p>
 <p>You should view the examples below as a 'cookbook' - you can use and
 combine these examples into many clever combinations.</p>
 
+<p>This is a work in progress!!</p>
+
 <ul>
   <li>General Examples
     <ul>
@@ -56,20 +58,50 @@ combine these examples into many clever combinations.</p>
 
 Include and I18N example
 
+<pre>
 languages={
-   english=[english.properties]
-   spanish=[spanish.properties]
+   english={
+      hello=Hello
+      world=World
+   }
+   spanish={
+      hello=Hola
+      world=Mundo
+   }
 }
+# This loads the system properties into the current context.
+system=[method://java.lang.System.getProperties()]
 
-system=${method://java.land.System.getProperties()}
-lang=${system->lang|english}
+# This is a complex substitution, with a default value of 'spanish'
+lang=${system->lang|spanish}
 
 current.lang=${languages->${lang}}
 
 hello.world="${current.lang->hello} ${current.lang->world}"
+</pre>
 
-=============
-Propose a side-by-side comparison for log4j configuraiton.
+<p>The output from a listing of this file is:</p>
+<div class="output">
+
+---- listing ----
+languages= {
+  english= {
+    hello=Hello
+    world=World
+  }
+  spanish= {
+    hello=Hola
+    world=Mundo
+  }
+}
+# system properties omitted from listing
+lang=spanish
+current.lang= {
+  hello=Hola
+  world=Mundo
+}
+hello.world=Hola Mundo
+</div>
 
 </body>
 </html>

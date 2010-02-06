@@ -535,6 +535,11 @@ public class EProperties extends Properties {
       }
       return false;
    }
+   
+   @Override 
+   public synchronized String toString() {
+      return list();
+   }
 
    ///////////////////////// Load/Save Methods ////////////////////////////
    /** This is the 'master' load() method.  All other load methods delgate
@@ -1022,11 +1027,41 @@ public class EProperties extends Properties {
          return null;
       if (val instanceof List)
          return (List<String>)val;
+      
+      // Automagically convert strings to lists.  If the return 
+      // value is a string, it will be parsed as a csv list.
+      // this method is quite dumb.  First, any and all substitutions
+      // are processed when retrieving the String, not in the list.
+      // Second, if the value is a single string - with no commas, 
+      // a single element list with the String as the only element 
+      // is returned.
+      if (val instanceof String) {
+         List<String> l=convertStringToList((String)val);
+         return l;
+      }
+      
       return null;
    }
+   
+   /** converts a string to a list. */
+   private static final List<String> convertStringToList(String s) {
+      List<String> l=new ArrayList<String>();
+      String parsed[]=s.split("\\,");
+      for (String p:parsed) 
+         l.add(p);
+      return l;
+   }
+   
+   /** Returns a list with a default value if the list is null. **/
+   public List<String> getList(String key, List<String>def) {
+      List<String>rval=getList(key);
+      if (rval != null)
+         return rval;
+      return def;
+   }
 
-
-   /** */
+   /** Returns a nested EProperties object if one is available for the
+    * given key.  If not, it returns null. */
    public EProperties getProperties(String key) {
       Object val = get(key);
       if (val == null)
@@ -1038,7 +1073,11 @@ public class EProperties extends Properties {
          return null;
    }
 
-   /** */
+   /** Returns a boolean.  Booleans are stored as Strings.  If the 
+    * string representing the key begins with [t|T], then this
+    * method returns true - otherwise it return false.  If the 
+    * key is not defined (null as a string) then this method returns
+    * false by default. */
    public boolean getBoolean(String key) {
       return getBoolean(key, false);
    }
@@ -1061,12 +1100,17 @@ public class EProperties extends Properties {
          return def;
    }
 
-   /** */
+   /** Returns an integer.  Integers are stored as Strings.  If the 
+    * string available with the inbound 'key' is null, or does not 
+    * parse to an integer, then this method returns -1.  */
    public int getInt(String key) {
       return getInt(key, -1);
    }
 
-   /** */
+   /** Returns an integer.  Integers are stored as Strings.  If the 
+    * string available with the inbound 'key' is null, or does not 
+    * parse to an integer, then this method returns the default
+    * value passed in.  */
    public int getInt(String key, int def) {
       Object val = get(key);
       if (val == null) {
@@ -1085,12 +1129,17 @@ public class EProperties extends Properties {
          return def;
    }
 
-   /** */
+   /** Returns a long.  Longs are stored as Strings.  If the 
+    * string available with the inbound 'key' is null, or does not 
+    * parse to a long, then this method returns -1.  */
    public long getLong(String key) {
       return getLong(key, -1);
    }
 
-   /** */
+   /** Returns a long.  Longs are stored as Strings.  If the 
+    * string available with the inbound 'key' is null, or does not 
+    * parse to a long, then this method returns the default
+    * value passed in.  */
    public long getLong(String key, long def) {
       Object val = get(key);
       if (val == null)
@@ -1108,12 +1157,17 @@ public class EProperties extends Properties {
          return def;
    }
 
-   /** */
+   /** Returns a float.  Floats are stored as Strings.  If the 
+    * string available with the inbound 'key' is null, or does not 
+    * parse to a float, then this method returns 0.0f.  */
    public float getFloat(String key) {
       return getFloat(key, 0.0f);
    }
 
-   /** */
+   /** Returns a float.  Floats are stored as Strings.  If the 
+    * string available with the inbound 'key' is null, or does not 
+    * parse to a float, then this method returns the defualt value
+    * passed in.  */
    public float getFloat(String key, float def) {
       Object val = get(key);
       if (val == null) {
@@ -1132,12 +1186,17 @@ public class EProperties extends Properties {
          return def;
    }
 
-   /** */
+   /** Returns a double.  Double are stored as Strings.  If the 
+    * string available with the inbound 'key' is null, or does not 
+    * parse to a double, then this method returns 0.0f.  */
    public double getDouble(String key) {
       return getDouble(key, 0.0f);
    }
 
-   /** */
+   /** Returns a double.  Double are stored as Strings.  If the 
+    * string available with the inbound 'key' is null, or does not 
+    * parse to a double, then this method returns the defualt value
+    * passed in.  */
    public double getDouble(String key, double def) {
       Object val = get(key);
       if (val == null) {

@@ -2,6 +2,7 @@ package test.net.jmatrix.eproperties;
 
 import java.io.*;
 import java.net.URL;
+import java.util.List;
 
 import net.jmatrix.eproperties.EProperties;
 
@@ -52,5 +53,24 @@ public class EPropertiesTest {
       Assert.assertNotNull(p.getString("foo"));
       Assert.assertNotNull(p.getProperties("included"));
       Assert.assertNotNull(p.getProperties("included").get("bar"));
+   }
+   
+   @Test 
+   public void testListFromString() throws IOException {
+      String props=
+         "stringlist=a,b,c,d \n"+
+         "sub=3,4\n"+
+         "stringlistwithsub=1,2,${sub}\n";
+      EProperties p=new EProperties();
+      p.load(new StringBufferInputStream(props));
+      
+      List<String> stringlist=p.getList("stringlist");
+      List<String> stringlistwithsub=p.getList("stringlistwithsub");
+      
+      
+      System.out.println ("stringlist: "+stringlist);
+      System.out.println ("stringlistwithsub: "+stringlistwithsub);
+      Assert.assertTrue(stringlist.size()==4);
+      Assert.assertTrue(stringlistwithsub.size()==4);
    }
 }
