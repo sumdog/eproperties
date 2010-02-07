@@ -117,7 +117,7 @@
         <echo message="Setting version to ${version}"/>
         <replace dir="build/docs/manual" token="$${version}" value="${version}"/>
         <echo message="copying release.txt"/>
-        <copy todir="build/docs/manual" file="release.txt" failonerror="true"/>
+        <copy todir="build/docs/manual" file="release.txt"/>
         
         
         <copy todir="build/bin">
