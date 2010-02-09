@@ -6,6 +6,11 @@ Contact: Paul Bemowski, bemowski@yahoo.com
 
 ===============================================================================
 
+1.0.4 Released 9 Feb 2010
+  - Added put with complex keys, that works as you would expect after
+    understanding complex keys.
+  - Added flatten method with custom delimeter for Fred Hart.
+
 1.0.3 Released Feb 6 2010
   - Fixed potential NPE in the toString() method.  toString is now over
     ridden, and returns the same value as the list() method.

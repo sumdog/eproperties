@@ -130,6 +130,52 @@ public class EProperties extends Properties {
       }
    }
    
+   /** See flatten(String delim). */
+   public EProperties flatten() {
+      return flatten("|");
+   }
+   
+   /** */
+   protected EProperties flatten(String prefix, String delim) {
+      EProperties flat=new EProperties();
+      for (Key key:keys) {
+         Object val=get(key);
+         if (val instanceof EProperties) {
+            EProperties epval=(EProperties)val;
+            // recursion
+            EProperties nestedFlat=null;
+            if (!empty(prefix))
+               nestedFlat=epval.flatten(prefix+delim+key.toString(), delim);
+            else 
+               nestedFlat=epval.flatten(key.toString(), delim);
+            
+            flat.addAll(nestedFlat);
+         } else if (val instanceof List) {
+            if (!empty(prefix))
+               flat.put(prefix+delim+key, val.toString());
+            else 
+               flat.put(key, val.toString());
+         } else {
+            if (!empty(prefix))
+               flat.put(prefix+delim+key, val.toString());
+            else 
+               flat.put(key, val.toString());
+         }
+      }
+      return flat;
+   }
+   
+   private static final boolean empty(String s) {
+      if (s == null || s.length() == 0)
+         return true;
+      return false;
+   }
+   
+   /** Removes all */
+   public EProperties flatten(String delim) {
+      return flatten("", delim);
+   }
+   
    /** */
    public void addAll(Properties p) {
       Enumeration keyset=p.keys();
@@ -289,8 +335,16 @@ public class EProperties extends Properties {
       if (keyIndex == -1)
          keys.add(key);
       else {
-         Key existingKey = keys.get(keys.indexOf(key));
-         existingKey.notifyListeners(v);
+         //Key existingKey = keys.get(keys.indexOf(key));
+         //existingKey.notifyListeners(v);
+         key=keys.get(keyIndex); // replace created key w/ existing key
+      }
+      
+      String keyString=key.keyString();
+      
+      if (keyString.indexOf("->") != -1) {
+         // this is a complex key.
+         return putWithComplexKey(keyString, v);
       }
       
       // build a value object.
@@ -333,8 +387,60 @@ public class EProperties extends Properties {
       if (this.listeners != null) {
          notifyListeners(key, value);
       }
+      // This will do nothing if there are no listeners.
+      key.notifyListeners(returnVal);
 
       return returnVal;
+   }
+   
+   /** 
+    * putWithCompleKey() works much like getWithComplexKey().  I will give a 
+    * simple example under 2 different conditions.
+    * 
+    * In both examples, the key is nested->foo.  In both cases the put method
+    * has been called on a properties object we'll call 'root'.  
+    * 
+    * Case 1: The 'root' EProperties object already has a nested properties
+    *         object named 'nested'.  In this case, we simply get a handle
+    *         to the deeper properties object called 'nested' and on it
+    *         we call put(key, val) with the key being a simple key 'foo' 
+    *         and the value being the inbound value.  ALL BEHAVIORS OF PUT
+    *         AT THAT POINT ARE IDENTICAL. Ie, if the value does not already 
+    *         exist, it is added.  If the value does exist, IN ANY FORM - ie
+    *         String, List or nested Properties - it is overwritten with 
+    *         the inbound object value.
+    *         
+    * Case 2: The 'root' EProperties object does not already have a nested
+    *         properties object called 'nested'.  In this case, a new properties
+    *         object is created, named 'nested' and added to 'root'.  
+    *         
+    * For keys with more than 2 levels of depth (ie, a->b->c), the process
+    * above is repeated until the last key (c in this example) is found - and 
+    * that key represtents the inbound value in the nested objects a->b that
+    * either already exist, or are created by this method.
+    */
+   private synchronized Object putWithComplexKey(String key, Object value) {
+      String keys[] = key.split("\\-\\>");
+      
+      log.debug ("getComplexKey(): "+Arrays.asList(keys));
+      
+      EProperties next = this;
+      String currentPath = "";
+      
+      //StringBuilder path=new StringBuilder();
+      
+      for (int i = 0; i < keys.length - 1; i++) {
+         // currentPath is used for debugging.
+         EProperties prev=next;
+         next=prev.getProperties(keys[i]);
+         if (next == null) {
+            // Create nested props that do not exist.
+            next=new EProperties();
+            prev.put(keys[i], next);
+         }
+      }
+      
+      return next.put(keys[keys.length-1], value);
    }
 
    /** */
@@ -698,6 +804,18 @@ public class EProperties extends Properties {
       return url;
    }
    
+   /** Save to the file currently identified by sourceURL.  sourceURL must be
+    * file based - and not http based - we can't magically save to an 
+    * http stream.
+    * 
+    * If this method is called on a properties object without a sourceURL, 
+    * this method searches up the tree to find a properties object that
+    * does have a source URL - and that object is saved if it can be found, 
+    * and has a file:// based source url.
+    * 
+    * @return Returns true if a save has been executed, false if not possible.
+    * @throws IOException
+    */
    public boolean save() throws IOException {
       if (sourceURL != null) {
          if (sourceURL.getProtocol() != null
@@ -935,7 +1053,8 @@ public class EProperties extends Properties {
       //
       // Which brings up the issue of error handling. What if one of the
       // indirections returns a null nested property object!!
-      // At that we will throw.
+      // At that we simply return null - as if you requested a value 
+      // from an EProperties object where the key does not exist.
       //
       // The final key can return any type of object (String, Vector,
       // Properties),
@@ -951,7 +1070,6 @@ public class EProperties extends Properties {
       //StringBuilder path=new StringBuilder();
       
       for (int i = 0; i < keys.length - 1; i++) {
-         
          // currentPath is used for debugging.
          if (currentPath.equals(""))
             currentPath = keys[i];
