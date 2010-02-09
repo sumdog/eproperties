@@ -73,4 +73,59 @@ public class EPropertiesTest {
       Assert.assertTrue(stringlist.size()==4);
       Assert.assertTrue(stringlistwithsub.size()==4);
    }
+   
+   @Test
+   public void testPutWithComplexKey1() throws IOException {
+      
+      EProperties p=new EProperties();
+      p.put("nested->nested->foo", "bar");
+      
+      System.out.println(p.list());
+      
+      String val=p.getString("nested->nested->foo");
+      Assert.assertTrue(val != null);
+      Assert.assertTrue(val.equals("bar"));
+   }
+   
+   @Test 
+   public void testPutWithComplexKey2() throws IOException {
+      String props=
+         "nested={\n"+
+         "   foo=bar\n"+
+         "}\n";
+      EProperties p=new EProperties();
+      p.load(new StringBufferInputStream(props));
+      
+      System.out.println ("Before complex put: \n"+p.list());
+      p.put("nested->foo", "baz");
+      System.out.println ("After complex put: \n"+p.list());
+      
+      String newval=p.getString("nested->foo");
+      Assert.assertNotNull(newval);
+      Assert.assertTrue(newval.equals("baz"));
+   }
+   
+   @Test 
+   public void testFlatten() throws IOException {
+      String props=
+         "flatv1=X\n"+
+         "nested={\n"+
+         "   foo=bar\n"+
+         "   nest2={\n"+
+         "      baz=444\n"+
+         "      biz=${flatv1}\n"+
+         "   }\n"+
+         "   list=1, 2, 3, 4\n"+
+         "}\n"+
+         "flatv2=Y\n";
+      EProperties p=new EProperties();
+      p.load(new StringBufferInputStream(props));
+      
+      EProperties flat=p.flatten();
+      
+      System.out.println ("Flat EProperties: \n"+flat.list());
+      
+      Assert.assertNotNull(flat);
+      Assert.assertTrue(flat.size() == 6);
+   }
 }
