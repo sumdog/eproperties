@@ -329,7 +329,14 @@ public class EProperties extends Properties {
       } else {
          throw new Error("Keys in EProperties must be [Key | String].");
       }
-
+      
+      String keyString=key.keyString();
+      
+      if (keyString.indexOf("->") != -1) {
+         // this is a complex key.
+         return putWithComplexKey(keyString, v);
+      }
+      
       // Prevent duplicate keys, preserve order, notify listeners
       int keyIndex = keys.indexOf(key);
       if (keyIndex == -1)
@@ -338,13 +345,6 @@ public class EProperties extends Properties {
          //Key existingKey = keys.get(keys.indexOf(key));
          //existingKey.notifyListeners(v);
          key=keys.get(keyIndex); // replace created key w/ existing key
-      }
-      
-      String keyString=key.keyString();
-      
-      if (keyString.indexOf("->") != -1) {
-         // this is a complex key.
-         return putWithComplexKey(keyString, v);
       }
       
       // build a value object.
