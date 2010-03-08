@@ -42,6 +42,7 @@ public class EPropertiesTest {
    
    @Test
    public void testLoadFromClasspathURL() throws IOException {
+      System.out.println ("============================");
       EProperties p=new EProperties();
       
       URL url=this.getClass().getResource("classpathtest.properties");
@@ -57,6 +58,7 @@ public class EPropertiesTest {
    
    @Test 
    public void testListFromString() throws IOException {
+      System.out.println ("============================");
       String props=
          "stringlist=a,b,c,d \n"+
          "sub=3,4\n"+
@@ -76,10 +78,9 @@ public class EPropertiesTest {
    
    @Test
    public void testPutWithComplexKey1() throws IOException {
-      
+      System.out.println ("============================");
       EProperties p=new EProperties();
       p.put("nested->nested->foo", "bar");
-      
       System.out.println(p.list());
       
       String val=p.getString("nested->nested->foo");
@@ -89,6 +90,7 @@ public class EPropertiesTest {
    
    @Test 
    public void testPutWithComplexKey2() throws IOException {
+      System.out.println ("============================");
       String props=
          "nested={\n"+
          "   foo=bar\n"+
