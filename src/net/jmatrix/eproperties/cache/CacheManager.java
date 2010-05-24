@@ -199,6 +199,7 @@ public class CacheManager {
       surl=surl.replace("\\", "/");
       surl=surl.replace("//", "/");
       surl=surl.replace(":/", "/");
+      surl=surl.replace(":", "-");
       
       String filename=null;
       String path=null;
