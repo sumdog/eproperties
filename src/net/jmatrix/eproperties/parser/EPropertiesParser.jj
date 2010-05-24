@@ -325,7 +325,7 @@ String value() :
          // quoted strings can contain escaped quotes.  They
          // will be un-escaped here.  <String> cannot contain
          // quotes - escaped or not, as the parser will not allow it.
-         s=s.replace("\\\"", "\"");
+         s=s.replaceAll("\\\\(.)", "$1");
          return s;
      }
      |
@@ -342,7 +342,7 @@ String value() :
         
         if (s.startsWith("\"") && s.endsWith("\""))
            s= s.substring(1, s.length()-1); // strip quotes
-        s=s.replace("\\\"", "\"");
+        s=s.replaceAll("\\\\(.)", "$1");
         
          return s;
      }
