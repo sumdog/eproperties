@@ -5,6 +5,13 @@ Release notes for EProperties.
 Contact: Paul Bemowski, bemowski@yahoo.com
 
 ===============================================================================
+
+1.0.6 Released 27 May 2010
+  - Changes from Fred Hart - 
+    - changed parser to better support legacy characters
+    - changed default delimiter character in the CacheManager to support Windows
+
+
 1.0.5 Released 10 Feb 2010
   - Fixed bug in put with complex key, found by Randall Theobald 
   
