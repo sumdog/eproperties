@@ -1,4 +1,28 @@
 
+
+9 March 2010
+  - Cannot leave a key= blank, and cannot define an empty hashmap with key={}
+    - key= should define a property with a value of empty string
+    - key={} should defind a property with a value of an empty nested EProperties object.
+    
+  For Henrik: 
+    - Bundle source in dist task.  Bundle src as a .zip in the .tar.gz and .zip
+    - investigate adding key:value syntax in parser
+    - Pluggable inclusion processors - currently no way to register.  Perhaps
+      register new processor as System property?  Or set globally on the 
+      EProperties class - and make the includer load additional processors 
+      from the static variable.
+  For Randall:
+    - Allow comments in elements of a list.  For instance:
+list=("one",
+      #"two",
+      "three")
+    - Pointers in comments do not parse.  the following will not parse:
+# ->
+key=value
+    
+
+
 9 Oct 2009
 - The use of the 'CacheManager' is a bit confusing.  this was included
   to further support http based properties, and guard against failure.
