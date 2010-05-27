@@ -135,7 +135,23 @@ public class EProperties extends Properties {
       return flatten("|");
    }
    
-   /** */
+   /**
+    * Flattens the property structure.  Nested properties are prefixed
+    * with the name of the nesting structure.  For instance, if we have:
+    * 
+    * foo=bar
+    * blah={
+    *   bing=bat
+    * }
+    * 
+    * Flatten would flatten the structure to:
+    * foo=bar
+    * blah|bing=bat
+    * 
+    * The delimiter is configurable (inbound on the method) with the 
+    * default delimeter being the pipe character: '|'.
+    * 
+    * */
    protected EProperties flatten(String prefix, String delim) {
       EProperties flat=new EProperties();
       for (Key key:keys) {
