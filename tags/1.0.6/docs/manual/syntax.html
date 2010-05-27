@@ -1,0 +1,575 @@
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one or more
+   contributor license agreements.  See the NOTICE file distributed with
+   this work for additional information regarding copyright ownership.
+   The ASF licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance with
+   the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<link rel="stylesheet" type="text/css" href="stylesheets/style.css">
+<title>{EProperties} Syntax</title>
+</head>
+
+<body>
+<h1>Syntax</h1>
+
+<p>This page describes the Syntax extensions supported by the EProperties
+object.</p>
+
+<p>The discussion of syntax extensions is divided into:</p>
+<p> [ 
+    <a href="#ebnf">EBNF</a> |
+    <a href="#basic">Basics</a> |
+    <a href="#nesting">Nesting</a> |
+    <a href="#lists">Lists</a> |
+    <a href="#substitution">Substitution</a> |
+    <a href="#inclusion">Inclusion</a> ] 
+</p>
+
+
+<!-- ========================== EBNF ===================== -->
+<h3><a name="ebnf">EBNF</a></h3>
+
+<p><a href="http://en.wikipedia.org/wiki/Extended_Backus-Naur_Form">
+Extended Backus-Naur Form or EBNF</a> metasyntax used to represent the 
+grammar or syntax of a language/file format.  
+</p>
+
+<pre>
+eProperties = { <a href="#key">key</a> "=" <a href="#value">value</a> | <a href="#comment">comment</a> | "[" <a href="#root.include">includeURL</a> "]" };
+
+<a href="#comment">comment</a> = "#" string EOL;
+<a href="#key">key</a> = keyString;
+value = [ <a href="#value">stringVal</a> | <a href="#lists">listVal</a> | "{" <a href="#nesting">eProperties</a> "}" | "[" <a href="#nested.include">includeURL</a> "]" ];
+
+<a href="#lists">listVal</a> = "(" quotedString ["," quotedString] ")" ;
+stringVal = quotedString | string EOL;
+quotedString = '"' string { [EOL string] } '"';
+
+string = ? all standard characters ?;
+keyString = ? [a-z,A-Z,.,-,_,0-9] ?;
+EOL = ? End of line character ?;
+<a href="#include.urls">includeURL</a> = ? A relative or absolute include URL ?
+</pre>
+
+<p>One key feature of EProperties not represented in the EBNF, is the 
+concept of <a href="#substitution">substitution</a>.  This is actually by 
+design - because substitution is not processed at <b>parse</b> time, rather
+subsitutions are processed when the value is requested from the 
+EProperties object.</p>
+
+<!-- ========================== BASIC ===================== -->
+<h3><a name="basic">Basic</a></h3>
+
+<p> [ <a href="#comment">Comments</a> | 
+   <a href="#key">Keys</a> |
+   <a href="#value">Values</a> ] </p>
+
+<p>The most basic syntax of EProperties supports most of the same constructs
+as the java.util.Properties object.  This includes key/value pairs, and 
+comments. </p>
+
+<pre>
+<font color="red"># This is a comment</font>
+key=value
+</pre>
+
+<p>Let's explore the core syntax elements - key / value / comment -  in a bit 
+more detail...</p>
+
+<h4><a name="comment">Comments</a></h4>
+<p>Comments are define as any line in which the first non-whitespace character
+is a '#' symbol.  This is the only definition of a comment in EProperties.</p>
+
+<h4><a name="key">Keys</a></h4>
+
+<p>Keys must be unique at any level within the EProperties tree.  If you use 
+a key again, the second value will override the first value.  </p>
+
+<p>For Example:</p>
+<pre>
+key=value
+key=yippie
+</pre>
+
+<p>Results in the value represented by 'key' being 'yippie'.  The second use 
+of the identical key results in the second value overridding the first value.</p>
+
+
+<h4><a name="value">Values (String values)</a></h4>
+<p>Values defined in EProperies are similar to values defined in 
+java.util.Properties.  Values can be a simple string, or a quoted string. 
+Quoted string values can contain quotes themselves, escaped with the 
+backslash (\) character.  Quoted strings can also contain newlines - and
+this is the primary / only mechanism within EProperties to define multi-line
+String values.</p>
+
+<p>Here are some examples:</p>
+<pre>
+<font color="red"># A trivial key/value pair</font>
+key=value
+
+<font color="red"># A quoted string works too...</font>
+qstring="This is a quoted String value"
+
+<font color="red"># Value with embeded double quotes, escaped</font>
+with.quotes="Upon discovering EProperties, he said \"Egad!\""
+
+<font color="red"># This is a multi-line string value</font>
+poem="Roses are red
+Violets are blue
+most poems rhyme
+but this one doesn't."
+</pre>
+
+<!-- ========================== NESTING ===================== -->
+
+<h3><a name="nesting">Nesting</a></h3>
+
+<p>[ <a href="#complex.keys">Complex Keys</a> ] <p>
+
+<p>The first true extension we will describe is the nesting of properties.
+The nesting syntax allows you to 'embed' an EProperties object as 
+the <code>Value</code> represented by a <code>Key</code>.  That may sound
+confusing at first, so lets look at an example:</p>
+<pre>
+<font color="red"># This is a comment</font>
+key=value
+
+<font color="red"># Nesting syntax</font>
+nested={
+   bar=baz
+}
+</pre>
+
+<p>In the example above, the root properties object has 2 keys.  The first 
+key named <code>key</code> has a single String value, <code>value</code>.  But the second
+key's value is not a String, it is again an EProperties object, with a single 
+key-value pair.</p>
+
+<p>So, in code, we may access this value like this:</p>
+<pre>
+EProperties root=new EProperties();
+root.load(file);
+EProperties nested=root.getProperties("nested");
+System.out.println ("the value of bar in nested is "+nested.getString("bar"));
+</pre>
+
+<p>Results in:</p>
+<div class="output">
+the value of bar in nested is baz
+</div>
+
+<h4><a name="complex.keys">Complex Keys</a></h4>
+<p>The above code is valid, and quite useful.  But in some instances it can become
+a bit cumbersome.  At this point we will add the definition of a 
+'complex key.'  A complex key and reference directly into a nested sub-properties
+object, with a simple pointer style syntax.  As an illustration, the code 
+below is equivalent, but a bit more concise using a complex key: </p>
+
+<pre>
+EProperties root=new EProperties();
+root.load(file);
+System.out.println ("the value of bar in nested is "+root.getString("<b>nested-&gt;bar</b>"));
+</pre> 
+<p>Also results in:</p>
+<div class="output">
+the value of bar in nested is baz
+</div>
+
+<p>In that example, <code><b>nested-&gt;bar</b></code> is a complex key.</p>
+
+<p>With only a single layer of nesting depth, a complex key may not save 
+too much effort.  However as you start to use deeper levels of nesting, 
+<code>complex keys</code> become much more useful.  </p>
+
+<p>In addition, <code>complex keys</code> are vital once we start describing
+<a href="#substitution">substitutions.</a></p>
+
+<!-- ========================== LISTS ===================== -->
+<h3><a name="lists">Lists</a></h3>
+<p>Like nesting, the List syntax extension is simply a way to put lists of 
+Strings into an EProperties object.  Lists themselves can only be lists of 
+Strings - not lists of nested properties objects.  Lists also support
+<a href="#substitution">substitutions</a> of values, described later.</p>
+
+<p>For example:</p>
+
+<pre>
+<font color="red"># Here are 2 simple lists</font>
+primary.colors=("red", "green", "blue")
+pure.colors=("red", "yellow", "green", "blue")
+</pre>
+
+<p>Defines 2 simple lists.  Accessing the lists via the EProperties API is 
+straightforward: </p>
+
+<pre>
+List&lt;String&gt; primaryColors=props.getList("primary.colors");
+</pre>
+
+<!-- ========================== SUBSTITUTION ===================== -->
+<h3><a name="substitution">Substitution</a></h3>
+<p> [ <a href="#resolving">Resolving Substitutions</a> | 
+   <a href="#default.values">Default Values</a> |
+   <a href="#complex.key.sub">Complex Keys</a> |
+   <a href="#nested.keys">Nested Keys</a> |
+   <a href="#partial.complete">Partial vs. Complete</a> ]
+   </p>
+
+<p>Substitution is a very powerful, but simple construct.  The substitution
+syntax follows the syntax used in a number of other languages - such as
+bash/unix variable substitution, and Ant build files.  The syntax uses 
+a $ in front of {} to denote the variable substitution.</p>
+
+<p>A simple example is again the easiest means of describing: </p>
+
+<pre>
+location="World!"
+message="Hello <b>${location}</b>"
+</pre>
+
+<p>In this simple example, the value of the key 'message' would be "Hello World!"</p>
+
+<p><b>Note:</b> Substitution processing happens, and keys are resolved to 
+values and replaced when the value is requested from the properties object, and
+not before.  Substitution DOES NOT happen at parse time, but rather at runtime.</p>
+
+<h4><a name="resolving">Resolving Substitution Values: the back-search algorithm</a></h4>
+
+<p>When a substituion key is encountered, the value returned will be 
+substituted with the value of the property requested inside of the {}.  The 
+search for a value will start at the current level within the properties tree.
+If a value is not found, EProperties will search backwards in the nesting
+until it finds a value.</p>  
+
+<p>If no value is found, then the string is not substituted and is returned
+with the substitution text intact.  This is considered an error state - 
+and may write an error to System.out.  </p>
+
+<pre>
+host="localhost"
+
+case.A={
+   message="The current host is ${host}"
+}
+case.B={
+   host="127.0.0.1"
+   message="The current host is ${host};
+}
+case.C={
+   message="The current host is ${hooost}"
+}
+message="The host here is ${host}"
+</pre>
+
+<p>Running the above properties file through the EProperties parser, results
+in the following (note the values for host, and how the resolution algorightm
+worked):</p>
+
+<div class="output">
+15:19:43.252 WARNING 10:main EProperties Value for key 'message' 
+defined in terms of un-resolvable substitution: 'The current host is ${hooost}'
+---- listing ----
+host=localhost
+case.A= {
+  message=The current host is localhost
+}
+case.B= {
+  host=127.0.0.1
+  message=The current host is 127.0.0.1
+}
+case.C= {
+  message=The current host is ${hooost}
+}
+message=The host here is localhost
+---- end listing ----
+</div>
+
+<h4><a name="default.values">Defining Default Values for Substitutions</a></h4>
+
+<p>When EProperties cannot find a value for a substitution, an error 
+occurs.  Very often this is the desired behavior - if a value is not 
+defined, the substitution should fail - and alert us that we've cocked 
+something up while writing the properties file.</p>
+
+<p>However, sometimes, it might be nice to specify a default value for 
+a substitution in the even that no suitable value can be found.  There
+will be examples later where this is very desirable.  Default values 
+are supported with a simple syntax.  Consider the following:</p>
+<pre>
+host="havana"
+
+case.C={
+   message="The current host is <b>${hooost|localhost}</b>"
+}
+</pre> 
+
+<p>In this example, the key for substituion is 'hooost' and if no value
+can be found for that key, the default value of 'localhost' is substituted.
+
+It is important to note that the search algorithm will walk up the 
+properties tree in search of a substitution value, and only use the default
+if no value can be found after the resolution algorithm is completed unsuccessfully.</p>
+
+<h4><a name="complex.key.sub">Complex Key Substitution</a></h4>
+
+<p>Complex keys can be used for substitution values.  A complex key works 
+exactly the same as a simple key with respect to substitution, including
+the search algorithm and default values.</p>
+
+<pre>
+test.url="http://${dev->host}/foo.html"
+
+dev={
+   host=snoopy.jmatrix.net
+}
+prod={
+   host=prod.jmatrix.net
+}
+</pre>
+
+<p>In the above example, the value of test.url is 'http://snoopy.jmatrix.net/foo.html'.
+Remember, the substitution happens AFTER the file is parsed.  Which means that
+the value can be defined after the key is used as a substitution value.</p>
+
+<h4><a name="nested.keys">Nested Key Substitution</a></h4>
+
+<p>Nested key substitution deals with keys of the form: ${foo${bar}}.</p>
+
+<p>In the case where nested substitutions are used, the substitutions
+are processed from the inside out.  The innermost substitutions are 
+resolved first - and the resultant value is used for further 
+substitutions.</p>
+<pre>
+# TBD: example!!
+</pre>
+
+
+<h4><a name="partial.complete">Partial vs. Complete Substitution</a></h4>
+
+<p>
+A substitution can be partial or complete.  A partial substitution only 
+applies to String values, either individually, or as a member of a 
+List of Strings.  A partial substitution may look like this: </p>
+<pre>
+location=world!
+message=Hello ${location}
+</pre>
+
+A complete substitution is the complete substitution of one variable for 
+another.  In this case, the resultant value takes the form of the 
+source.  Consider the following example:
+<pre>
+dev={
+   host=test.jmatrix.net
+}
+prod={
+   host=prod.jmatrix.net
+}
+
+env=${prod}
+host=${env->host}
+</pre>
+
+<p>In the case above, the value for env will be a complete substitution.
+The resultant could be a String, a List, or a nested EProperties 
+object.  Above, env will be a nested properties object.</p>  
+
+<div class="output">
+---- listing ----
+dev= {
+  host=test.jmatrix.net
+}
+prod= {
+  host=prod.jmatrix.net
+}
+env= {
+  host=prod.jmatrix.net
+}
+host=prod.jmatrix.net
+---- end listing ----
+</div>
+
+<p>Note - partial substitutions do not make sense in this context.</p> 
+
+<p>Complete and partial substitutions use essentially the same syntax, 
+but a complete substitution brings new types of flexibility to your
+configuration.</p>
+
+<!-- ========================== INCLUSION ===================== -->
+
+<h3><a name="inclusion">Inclusion</a></h3>
+
+<p>[ <a href="#nested.include">Nested Inclusion</a> | 
+   <a href="#root.include">Root Inclusion</a> |
+   <a href="#include.urls">Include URLs</a> |
+   <a href="#include.options">Options</a> |
+   <a href="#method.include">Method Inclusion</a> ]
+</p>
+
+<p>The inclusion feature of EProperties provides a syntax allowing one
+file to include properties from another file/URL.  This can be very 
+powerful when building complex configurations.
+The inclusion mechanism supports a few URL syntaxes - including file://, 
+http://, https://, and method:// which we will 
+<a href="#method.include">cover in more detail later.</a></p>
+
+<h4><a name="nested.include">Nested Inclusion</a></h4>
+
+<p>Nested inclusion allows you to include a Properties file as a subkey
+in the current properties file.  (To understand nested inclusion, you 
+must understand <a href="#nesting">nesting properties</a> described 
+earlier.) Consider this simple example:</p>
+
+<p>app.properties:</p>
+<pre>
+app.name="My Test Application"
+app.version="2.0"
+
+db={
+   host=test.jmatrix.net
+   name=testapp
+   user=spider
+   pass=monkey
+   driver=
+   url=jdbc:mysql://${host}:3306/${testapp}
+}
+</pre>
+
+<p>This can be split into 2 files, call them app.properties and db.properties, 
+that will parse and resolve to the exact same resultant EProperties object.. </p>
+
+<p>app.properties:</p>
+<pre>
+app.name="My Test Application"
+app.version="2.0"
+
+<b>db=[db.properties]</b>
+</pre>
+
+<p>db.properties:</p>
+<pre>
+host=test.jmatrix.net
+name=testapp
+user=spider
+pass=monkey
+driver=
+url=jdbc:mysql://${host}:3306/${testapp}
+</pre>
+
+<p>Note that the included db.properties file is <i>included</i> in the 
+app.properties file as nested properties object under the <code>db</code> key.</p>
+
+<h4><a name="root.include">Root Inclusion</a></h4>
+
+<p>Root inclusion is when the included properties file is included at the
+same level into the current properties file.  If we changed app.properties 
+in the above example to this:</p>
+<pre>
+app.name="My Test Application"
+app.version="2.0"
+<b>[db.properties]</b>
+</pre>
+
+<p>Then the db.properties would be included in the app.properties at the 
+same level, rather than being nested under the sub-key <code>db</code>.</p>
+
+<h4><a name="include.urls">Inclusion URLs</a></h4>
+
+<p>There are several important rules to understand when including properties
+files / URLs.</p>
+<ul>
+  <li>Absolute urls begin with a protocol and are resolved as absolute urls. </li>
+  <li>Relative URLs are loaded relative to the URL of the parent properties object.
+     <ul>
+	     <li>If the parent is <code>http://jmatrix.net/app.properties</code>, and you include 
+	     <code>[db.properties]</code>, it is relative to its parent - or <code>[http://jmatrix.net/db.properties]</code></li>
+	     <li>If the parent is a file, as in <code>config/app.properties</code> and you include 
+	     <code>[db.properties]</code>, it is relative to its parent - or <code>[config/db.properties]</code></li>
+     </ul>
+  </li>
+  
+  <li>If no protocol is specified, it is assumed to be a file.  The file path
+  follows all of the rules associated with Files in Java.  Ie, if the path is
+  relative, it is relative to System.getProperty("user.dir");</li>
+  
+  <li>Inclusion happens <b>at parse time</b>.</li>
+  <li>If the EProperties inclusion processor cannot find the properties file
+  at the requested URL, it is considered and error, and the parse will fail.
+  This can be optionally disabled with <a href="#failonerror">failonerror=false</a>.</li>
+</ul>
+
+<h4><a name="include.options">Inclusion Options</a></h4>
+
+<p>The inclusion processor respects a couple of options that can be useful
+to change the behavior of the inclusion processor.  Options are specified
+after the inclusion url, and delimited with a pipe (|). </p>
+
+<h5><a name="failonerror">failonerror=false</a></h5>
+<p>This option tells the inclustion processor that if it cannot find a file, 
+it should not cause an error.  This option can be useful when adding optional
+local overrides to a file.  If there are no overrides - and the file does not
+exist - then the inclusion processor will not fail.</p>
+
+<p>Example:</p>
+<pre>
+[/etc/local.properties|failonerror=false]
+</pre>
+
+<h5>parse=false</h5>
+<p>This tells the inclusion processor to include the referenced file as
+a string, rather than another properties file.  This ONLY works on Nested
+includes.  <b>Substitutions are still
+processed within this String value.</b></p>
+
+<p>This option can be useful for including SQL commands/files as part of
+a properties based configuration, while still processing substitutions 
+within those SQL files.  There are surely additional uses.</p>
+
+<p>Example:</p>
+<pre>
+sql=[updateUser.sql|parse=false]
+</pre>
+
+<h4><a name="method.include">method:// Inclusion Syntax</a></h4>
+
+<p>Method properties inclusion allows you to include properties that 
+are available to the JVM via a static method call. This could be a static
+method call to your custom code.  Perhaps more commonly, we can include the
+java System properties in the current properties context.  Including system 
+properties is especially useful, because we can use <a href="#substitution">
+substitutions</a> based on the system properties.</p>
+
+<p>To include Java System properties in the current context, nested under the
+system key, we would use the following syntax:</p>
+<pre>
+<font color="red"># Load the java system properties</font>
+system=[method://java.lang.System.getProperties()]
+</pre>
+
+<p>On systems that support it, we can also load the available environment
+variables as nested or root properties.</p>
+<pre>
+<font color="red"># Load the Environment</font>
+envvars=[method://java.lang.System.getenv()]
+</pre>
+
+<p>It is left to the user to extrapolate this to including properties
+by calling static methods on other classes - including your own.</p>
+
+</body>
+</html>
+
