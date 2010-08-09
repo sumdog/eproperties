@@ -1,0 +1,1 @@
+./run net.jmatrix.eproperties.cli.PDiff $*
