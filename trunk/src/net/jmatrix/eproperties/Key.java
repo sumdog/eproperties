@@ -14,6 +14,8 @@ public class Key
 {
    String comments=null;
    String key=null;
+   
+   int hitcount=0;
 
    List<PropertyListener> listeners=null;
 
@@ -40,6 +42,18 @@ public class Key
    
    public String getComments() {
       return comments;
+   }
+   
+   public synchronized void hit() {
+      hitcount++;
+   }
+   
+   public synchronized void removeHit(){
+      hitcount--;
+   }
+   
+   public int getHitCount() {
+      return hitcount;
    }
    
    /** */
@@ -104,7 +118,7 @@ public class Key
       else
          ret=false;
       
-      //System.out.println ("Key("+key+") == "+obj.toString()+" type="+type+" ? "+ret);
+      //System.out.println ("Key.equals ("+key+") == "+obj.toString()+" type="+type+" ? "+ret);
       return ret;
    }
 

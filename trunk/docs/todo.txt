@@ -1,4 +1,33 @@
 
+Support classpath URLs
+ classpath://net/jmatrix/test/foo.properties
+   - System classloader or local classloader
+   - If a [include] is relative, then it goes to the parent URL.
+     if the parent URL is file/http based, then it shoudl load with that
+     if the parnte URL is classpath:// based, then it should attempt relative to that.
+   - new method on EProperties to help bootstrap classpath based loading:
+     EProperites.loadFromClasspath(String x) 
+       - relative vs. absolute.  
+         - if we allow relative, it should be relative to the calling class
+         - else absolute.
+         
+Support jdbc urls
+
+  jdbc://user@pass:jdbc:mysql://localhost:3306/property_server|table=properties|keycol=key|valcol=value
+
+  tableprops={
+     driver=
+     url=
+     user=
+     pass=
+     props.table=
+     props.key=
+     props.val=
+  }
+  
+  props=[${tableprops}]
+
+  - Where does it get the JDBC driver???
 
 9 March 2010
   - Cannot leave a key= blank, and cannot define an empty hashmap with key={}

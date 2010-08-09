@@ -5,12 +5,12 @@ import java.net.URL;
 
 import net.jmatrix.eproperties.EProperties;
 import net.jmatrix.eproperties.cache.CacheManager;
-import net.jmatrix.eproperties.utils.StreamUtil;
+import net.jmatrix.eproperties.utils.*;
 
 import org.apache.commons.logging.*;
 
 /**
- * Loads properties from a file.  
+ * Loads properties from file, http(s), or classpath locations. 
  */
 public class URLPropertiesLoader implements PropertiesLoader {
    static Log log=LogFactory.getLog(URLPropertiesLoader.class);
@@ -21,9 +21,10 @@ public class URLPropertiesLoader implements PropertiesLoader {
       if (s == null)
          return false;
       
-      if (s.toLowerCase().startsWith("file://") ||
+      if (s.toLowerCase().startsWith("file:/") ||
           s.toLowerCase().startsWith("http://") ||
-          s.toLowerCase().startsWith("https://")) {
+          s.toLowerCase().startsWith("https://") ||
+          s.toLowerCase().startsWith("classpath:/")) {
          return true;
       }
       return false;
@@ -32,12 +33,31 @@ public class URLPropertiesLoader implements PropertiesLoader {
    /** */
    public Object loadProperties(EProperties parent, String surl, 
          EProperties options) {
-      
-      //EProperties props=new EProperties();
+
       Object result=null;
-            
-      if (surl.startsWith("http://") || surl.startsWith("https://") ||
-          surl.startsWith("file://")) {
+
+      
+      //surl=surl.toLowerCase();
+      
+      // Translate classpath:// URLs to Java internal URLs.
+      surl=ClasspathURLUtil.convertClasspathURL(surl);
+      String lcurl=surl.toLowerCase();
+//      if (surl.startsWith("classpath:/")) {
+//         System.out.println ("Found classpath URL: "+surl);
+//         // First strip off the stuff that I created - 'classpath://'
+//         String resourcepath=surl.substring("classpath:/".length());
+//         System.out.println ("Resource path: "+resourcepath);
+//         URL url=URLPropertiesLoader.class.getResource(resourcepath);
+//         
+//         if (url == null) {
+//            throw new RuntimeException("Cannot find resource in classpath for URL "+surl);
+//         }
+//         System.out.println (surl+" -> "+url.toExternalForm());
+//         surl=url.toExternalForm(); // this will start with either file:// or jar:file:/
+//      }
+//      
+      if (lcurl.startsWith("http://") || lcurl.startsWith("https://") ||
+          lcurl.startsWith("file:/") || lcurl.startsWith("jar:file:/")) {
          log.debug("Loading as absolute URL: "+surl); 
          result=loadFromURL(surl, options, parent);
       } else if (surl.startsWith("/")) { 
@@ -129,7 +149,11 @@ public class URLPropertiesLoader implements PropertiesLoader {
    }
 
    
-   /** */
+   /** 
+    * Returns either a String or an EProperties object, dependent on 
+    * whether the parse property is true or false.
+    * 
+    * */
    private Object loadFromURL(String surl, EProperties options, EProperties parent) {
       Object result=null;
       try {
