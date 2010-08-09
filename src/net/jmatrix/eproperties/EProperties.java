@@ -292,9 +292,13 @@ public class EProperties extends Properties {
       return sb.toString();
    }
    
+   public void list(PrintStream ps) {
+      list((OutputStream)ps);
+   }
+   
    /** */
-   public void list(OutputStream ps) {
-      list(ps, false);
+   public void list(OutputStream os) {
+      list(os, false);
    }
    
    public void list(OutputStream ps, boolean hits) {
