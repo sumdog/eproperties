@@ -19,6 +19,15 @@ import org.apache.commons.logging.*;
  *
  * To maintain transparency, we will use a Tee type input stream bound to a
  * buffered writer to minimize performance impacts.
+ * 
+ * System Properties: <br>
+ * eproperties.cache:  If set to anything other than "true", the cache is 
+ *    disabled for the life of the JVM.  Only read at the first call to 
+ *    CacheManager.getInstance(), called internally before any EProperties load 
+ *    operation.  Default: true<br>
+ *    
+ * eproperties.cache.root: Sets the cache root folder.  
+ *    Default: ${user.home}/.eproperties/cache/
  */
 public class CacheManager {
    static final Log log=LogFactory.getLog(CacheManager.class);
@@ -26,6 +35,20 @@ public class CacheManager {
    static CacheManager instance=null;
    
    static final String CACHE_ROOT_PROPERTY="eproperties.cache.root";
+   
+   /** It is enabled by default, but will be disabled (for the life of the 
+    * JVM) if this is set to "false".  
+    * 
+    * There is no lifecycle management.  At the time that CacheManager.getInstance() 
+    * is called - if this _system_ property is set to false, then the 
+    * CacheManager will be 'disabled' any you cannot re-enable it at runtime.
+    * 
+    * The CacheManager is either on or off for the life of the JVM.  Unless
+    * someone can explain a need for a more complex behavior.  
+    * 
+    * Paul Bemowski, 30jul2010.
+    */
+   static final String EPROPERTIES_CACHE="eproperties.cache";
    
    File cacheRoot=null;
    
@@ -38,37 +61,46 @@ public class CacheManager {
     */
    boolean CACHE_FILE_URLS=false;
    
-   boolean ONLINE=true;
+   boolean online=true;
+   
    String state="ONLINE";
    
    /** */
    private CacheManager() {
-      if (System.getProperty(CACHE_ROOT_PROPERTY) != null) {
-         cacheRoot=new File(System.getProperty(CACHE_ROOT_PROPERTY));
-      } else {
-         cacheRoot=new File(System.getProperty("user.home")+"/.eproperties/cache/");
-      }
+      String enabled=System.getProperty(EPROPERTIES_CACHE, "true");
       
-      if (!cacheRoot.exists()) {
-         boolean success=cacheRoot.mkdirs();
+      if (enabled.equals("true")) {
+         if (System.getProperty(CACHE_ROOT_PROPERTY) != null) {
+            cacheRoot=new File(System.getProperty(CACHE_ROOT_PROPERTY));
+         } else {
+            cacheRoot=new File(System.getProperty("user.home")+"/.eproperties/cache/");
+         }
+         log.debug("EProperties: CacheManager root at "+cacheRoot);
          
-         if (!success) {
-            ONLINE=false;
-            state="Cannot create cache root dir at "+
-                  cacheRoot.getAbsolutePath();
+         if (!cacheRoot.exists()) {
+            boolean success=cacheRoot.mkdirs();
+            
+            if (!success) {
+               online=false;
+               state="Cannot create cache root dir at "+
+                     cacheRoot.getAbsolutePath();
+               log.error(state);
+               log.error("CacheManager will be unavilable for read/write property caching.");
+            }
+         }
+         
+         if (!cacheRoot.canWrite()) {
+            online=false;
+            state="Cannot write in cache dir.  CacheManager unavailable.";
             log.error(state);
             log.error("CacheManager will be unavilable for read/write property caching.");
          }
+      } else {
+         online=false;
+         state="Disabled by system property (eproperties.cache != true)";
       }
       
-      if (!cacheRoot.canWrite()) {
-         ONLINE=false;
-         state="Cannot write in cache dir.  CacheManager unavailable.";
-         log.error(state);
-         log.error("CacheManager will be unavilable for read/write property caching.");
-      }
-      
-      log.info("EProperties: CacheManager online at "+cacheRoot);
+      log.debug("EProperties: CacheManager state: "+state);
    }
    
    /** */
@@ -98,7 +130,7 @@ public class CacheManager {
          throw new IOException ("Cannot open input stream for null URL.");
       }
       
-      if (!ONLINE)
+      if (!online)
          return url.openStream();
       
       InputStream pis=null;
@@ -149,6 +181,16 @@ public class CacheManager {
       return pis;
    }
    
+   /** MUST be called before getInstance().  
+    * Sets the system property eproperties.cache to false.*/
+   public static final void disable() {
+      if (instance != null) {
+         log.error("CacheManager: Call to disable() after CacheManager instance already created.  Ignored.");
+      } else {
+         System.setProperty(EPROPERTIES_CACHE, "false");
+      }
+   }
+   
    /** */
    public InputStream getInputStream(InputStream is, URL url) {
       return getInputStream(is, (url == null? null:url.toExternalForm()));
@@ -156,7 +198,7 @@ public class CacheManager {
    
    /** */
    public InputStream getInputStream(InputStream is, String surl) {
-      if (!ONLINE)
+      if (!online)
          return is;
       
       if (surl == null)

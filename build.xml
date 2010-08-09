@@ -1,7 +1,7 @@
 <project name="eproperties" default="all" basedir=".">
    
    <!-- The equivalent of 'make all' -->
-   <target name="all" depends="init,assemble,test" />
+   <target name="all" depends="init,assemble" />
 
    <!-- Full build, deletes everything, and builds everything. -->
    <target name="full" depends="init,clean" />
@@ -25,6 +25,14 @@
     <path id="javacc.class.path">
       <fileset dir="javacc/4.2/"> 
           <include name="javacc.jar"/>
+      </fileset>
+    </path>
+    
+    <path id="junit.class.path">
+      <path refid="project.class.path"/>
+      <pathelement location="build/classes"/>
+      <fileset dir="junit"> 
+          <include name="*.jar"/>
       </fileset>
     </path>
     
@@ -54,7 +62,7 @@
        <java classname="javacc">
            <classpath refid="javacc.class.path"/>
            <arg value="-OUTPUT_DIRECTORY=${javacc.output}"/>
-           <arg value="src/net/jmatrix/eproperties/parser/EPropertiesParser.jj"/>
+           <arg value="${basedir}/src/net/jmatrix/eproperties/parser/EPropertiesParser.jj"/>
        </java>
     </target>
     
@@ -72,18 +80,34 @@
         </javac>
 
         <copy todir="build/classes">
-           <fileset dir="src" includes="**/*.properties,**/*.png" />
+           <fileset dir="src" includes="**/*.properties" />
         </copy>
+            
+        <copy todir="build/classes/net/jmatrix/eproperties">
+           <fileset dir="${basedir}" includes="version.properties" />
+        </copy>
+
     </target>
     
     <!-- Compile JUnit tests-->
     <target name="compile-tests" depends="compile"> 
         <mkdir dir="build/test-classes" />
-
+        
         <javac destdir="build/test-classes" 
-            excludes="**/*.old" debug="true" target="1.5"> 
+            excludes="**/*.old" debug="true" target="1.5">
+            <!--
+           <classpath>
+              <pathelement refid="project.class.path"/>
+              <pathelement loction="build/classes"/>
+              <filelist refid="junit.class.path"/>
+           </classpath>
+
            <classpath refid="project.class.path"/>
            <classpath path="build/classes"/>
+                      </classpath>
+            -->
+           <classpath refid="junit.class.path"/>
+          
            <!-- classpath>
                <classpathelement refid="project.class.path"/>
            </classpath -->
@@ -102,7 +126,7 @@
     </target>
     
     <!-- Assemble creates the deployable artifacts, like jars, wars, zips -->
-    <target name="assemble" depends="compile,javadoc">
+    <target name="assemble" depends="compile">
         <copy todir="build/config">
            <fileset dir="config" includes="**"/>
         </copy>
@@ -166,9 +190,9 @@
         
         <junit showoutput="yes" printsummary="yes">
             <classpath>
-               <!-- fileset dir="ivy-lib/build">
+                <fileset dir="junit">
                   <include name="*.jar"/>
-                </fileset -->
+                </fileset>
                 <!-- need runtime stuff for oracle driver -->
                 <fileset dir="build/jars">
                   <include name="*.jar"/>
@@ -184,13 +208,14 @@
             <batchtest todir="build/junit.report">
               <fileset dir="test">
                 <include name="**/*Test.java"/>
+                <include name="**/Test*.java"/>
               </fileset>
             </batchtest>
         </junit>
     </target>
     
     <!-- Creates distributable artifacts. -->
-    <target name="dist" depends="assemble">
+    <target name="dist" depends="test,assemble,javadoc">
         <property name="build-id" value="${name}-${version}"/>
         <property name="dist-tmp" value="dist-tmp/${build-id}"/>
         <mkdir dir="${dist-tmp}"/>

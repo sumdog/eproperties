@@ -32,12 +32,6 @@ public class EPropertiesTest {
          System.out.println ("this is expected.");
          Assert.assertTrue("Exception should be thrown when including via input stream.", ex!=null);
       }
-      
-//      System.out.println (p.list(2));
-//      
-//      Assert.assertNotNull(p.getString("foo"));
-//      Assert.assertNotNull(p.getProperties("included"));
-//      Assert.assertNotNull(p.getProperties("included").get("bar"));
    }
    
    @Test

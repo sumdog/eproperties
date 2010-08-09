@@ -6,6 +6,7 @@ import java.util.*;
 
 import net.jmatrix.eproperties.cache.*;
 import net.jmatrix.eproperties.parser.EPropertiesParser;
+import net.jmatrix.eproperties.utils.ClasspathURLUtil;
 
 import org.apache.commons.logging.*;
 
@@ -84,7 +85,53 @@ public class EProperties extends Properties {
     * and the number of properties.  If such a calculation is expensive, 
     * the the monitoring thread should be slowed to an appropriate rate.  
     * */
-   static long lastModification=-1;
+   long lastModification=-1;
+   
+   /**
+    * Static initializer.  This simply prints some version and 
+    * marketing info on the bootstrap of EProperties.
+    */
+   static {
+      InputStream is=null;
+      Properties p=null;
+      try {
+         is=EProperties.class.getResourceAsStream("version.properties");
+         if (is != null) {
+            p=new Properties();
+            p.load(is);
+         }
+      } catch (Throwable t) {
+         t.printStackTrace();
+      } finally {
+         if (is != null)
+            try {is.close();} catch (Exception ex) {}
+      }
+      StringBuilder message=new StringBuilder();
+      String version="UNKNOWN";
+      if (p != null)
+         version=p.getProperty("version");
+      if (version == null)
+         version="ERROR";
+      //System.out.println ("version: "+version+" length: "+version.length());;
+      int dlen=14;
+      if (version.length() > dlen)
+         version=version.substring(0,dlen);
+      else if (version.length() < dlen) {
+         int add=dlen-version.length();
+         for (int i=0; i<add; i++)
+            version=version+" ";
+      }
+      //System.out.println ("version: '"+version+"' version.length="+version.length());
+      
+      message.append("+-----------------------------------------------------------+\n");
+      message.append("|         Loading EProperties version "+version   +"        |\n");
+      message.append("| For more info, see the EProperties project on googlecode. |\n");
+      message.append("|         http://code.google.com/p/eproperties/             |\n");
+      message.append("+-----------------------------------------------------------+\n");
+
+      System.out.println (message);
+   }
+   
    
    /** Constructs a sub-properties object, the parent collection is passed
     * into the constructor. */
@@ -133,6 +180,11 @@ public class EProperties extends Properties {
    /** See flatten(String delim). */
    public EProperties flatten() {
       return flatten("|");
+   }
+   
+   /** Flattens properties with the inbound delimiter. */
+   public EProperties flatten(String delim) {
+      return flatten("", delim);
    }
    
    /**
@@ -186,12 +238,7 @@ public class EProperties extends Properties {
          return true;
       return false;
    }
-   
-   /** Removes all */
-   public EProperties flatten(String delim) {
-      return flatten("", delim);
-   }
-   
+
    /** */
    public void addAll(Properties p) {
       Enumeration keyset=p.keys();
@@ -215,7 +262,7 @@ public class EProperties extends Properties {
          // substitutions should have happened at the point that
          // this is called.
          Object value=get(key);
-         
+         key.removeHit();
          if (value instanceof String) {
             String s=(String)value;
             if (SubstitutionProcessor.containsTokens(s)) {
@@ -246,29 +293,26 @@ public class EProperties extends Properties {
    }
    
    /** */
-   public void list(PrintStream ps) {
-      list(new PrintWriter(new OutputStreamWriter(ps), true));
+   public void list(OutputStream ps) {
+      list(ps, false);
+   }
+   
+   public void list(OutputStream ps, boolean hits) {
+      list(new PrintWriter(new OutputStreamWriter(ps), true), 0, hits);
    }
    
    /** */
    public void list(PrintWriter pw) {
-      int size=keys.size();
-      //pw.println ("--- EProperties listing ---");
-      for (int i=0; i<size; i++) {
-         Key key=keys.get(i);
-         Object value=get(key);
-         if (value instanceof EProperties) {
-            pw.println(key+"= {");
-            ((EProperties)value).list(pw, 1);
-            pw.println("}");
-         } else 
-            pw.println (key+"="+value);
-      }
-      //pw.println ("--- end EProperties listing ---");
+      list(pw,0);
    }
    
-   /** */
    public void list(PrintWriter pw, int depth) {
+      list(pw, depth, false);
+   }
+   
+   
+   /** */
+   public void list(PrintWriter pw, int depth, boolean printhits) {
       int size=keys.size();
       StringBuilder sb=new StringBuilder();
       for (int i=0; i<depth; i++) 
@@ -278,13 +322,20 @@ public class EProperties extends Properties {
       for (int i=0; i<size; i++) {
          Key key=keys.get(i);
          Object value=get(key);
+         key.removeHit();
+         
+         String keystring=null;
+         if (printhits)
+            keystring=key+"["+key.getHitCount()+"]";
+         else
+            keystring=key.toString();
          
          if (value instanceof EProperties) {
-            pw.println(pad+key+"= {");
-            ((EProperties)value).list(pw, depth+1);
+            pw.println(pad+keystring+" = {");
+            ((EProperties)value).list(pw, depth+1, printhits);
             pw.println(pad+"}");
          } else {
-            pw.println (pad+key+"="+value);
+            pw.println (pad+keystring+"="+value);
          }
       }
    }
@@ -346,11 +397,12 @@ public class EProperties extends Properties {
          throw new Error("Keys in EProperties must be [Key | String].");
       }
       
-      String keyString=key.keyString();
+      String keyString=key.toString();
       
       if (keyString.indexOf("->") != -1) {
          // this is a complex key.
          return putWithComplexKey(keyString, v);
+         // FIXME: This does not account for listeners to keys/properties at any level
       }
       
       // Prevent duplicate keys, preserve order, notify listeners
@@ -397,7 +449,6 @@ public class EProperties extends Properties {
          throw new Error("EProperties put() values can only be: "+
                "[String | List<String> | EProperties | StringValue | ListValue].  "+
                "Not "+v.getClass().getName());
-               		
       }
 
       if (this.listeners != null) {
@@ -432,7 +483,7 @@ public class EProperties extends Properties {
     *         
     * For keys with more than 2 levels of depth (ie, a->b->c), the process
     * above is repeated until the last key (c in this example) is found - and 
-    * that key represtents the inbound value in the nested objects a->b that
+    * that key represents the inbound value in the nested objects a->b that
     * either already exist, or are created by this method.
     */
    private synchronized Object putWithComplexKey(String key, Object value) {
@@ -490,6 +541,27 @@ public class EProperties extends Properties {
       return returnVal;
    }
    
+   /** Logs 'hits' to keys.  This allows us to know what properties are being
+    * used in a long running JVM.  See Key.getHitCount(). */
+   private void keyHit(Object key) {
+      if (key instanceof String)
+         key=new Key((String)key);
+      int index=keys.indexOf(key);
+      
+      if (index < 0) {
+         //System.out.println ("Can't log hit on "+key);
+         //System.out.println ("keys: "+keys);
+         //System.out.println ("keys.contains?"+keys.contains(key));
+      } else {
+         Key thekey=keys.get(index);
+         thekey.hit();
+         //System.out.println ("Logged hit on key "+thekey);
+      }
+   }
+   
+   /**
+    * All getters funnel to this location.  This is the 'super' get.  
+    */
    @Override
    public Object get(Object key) {
       Object val=null;
@@ -498,11 +570,21 @@ public class EProperties extends Properties {
          String skey=(String)key;
          if (skey.indexOf("->") > 0)
             val=getWithComplexKey(skey);
-         else 
+         else {
             val=super.get(key);
-      } else {
+            if (val != null)
+               keyHit(key);
+         }
+      } else { 
          val=super.get(key);
+         if (val != null)
+            keyHit(key);
       }
+      
+      // At this point, val could be null.  
+      //System.out.println ("val: "+val);
+      if (val == null)
+         return val;
       
       // here, we'll process substitutions if they exist...
       if (val instanceof StringValue) {
@@ -526,6 +608,8 @@ public class EProperties extends Properties {
          }
          return list;
       }
+      
+      // this can and will be EProperties as well as primitives.
       return val;
    }
    
@@ -718,7 +802,13 @@ public class EProperties extends Properties {
    public void load(String surl) throws IOException {
       URL url=null;
       
-      if (surl.indexOf("://") != -1) {
+      surl=ClasspathURLUtil.convertClasspathURL(surl);
+      
+      String lcurl=surl.toLowerCase();
+      
+      //if (surl.indexOf("://") != -1) {
+      if (lcurl.startsWith("http://") || lcurl.startsWith("https://") ||
+          lcurl.startsWith("file:/") || lcurl.startsWith("jar:file:/")) {
          //System.out.println ("Constructing URL as URL");
          url=new URL(surl);
       } else {
