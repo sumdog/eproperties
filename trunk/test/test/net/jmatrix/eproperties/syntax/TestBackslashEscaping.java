@@ -1,4 +1,4 @@
-package test.net.jmatrix.eproperties;
+package test.net.jmatrix.eproperties.syntax;
 
 
 import java.io.*;

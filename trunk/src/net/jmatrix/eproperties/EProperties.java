@@ -6,7 +6,7 @@ import java.util.*;
 
 import net.jmatrix.eproperties.cache.*;
 import net.jmatrix.eproperties.parser.EPropertiesParser;
-import net.jmatrix.eproperties.utils.ClasspathURLUtil;
+import net.jmatrix.eproperties.utils.URLUtil;
 
 import org.apache.commons.logging.*;
 
@@ -24,7 +24,7 @@ import org.apache.commons.logging.*;
  * want someone writing while we are saving.  Write, save, and notification
  * operations should be atomic.   
  */
-public class EProperties extends Properties {
+public class EProperties extends Properties implements Value<EProperties> {
    public static Log log=LogFactory.getLog(EProperties.class);
    
    /** When set to true, EProperties will emit some debug logging. */
@@ -158,7 +158,7 @@ public class EProperties extends Properties {
     * This is called by the parser to implement root property includes. 
     */
    public void merge(EProperties p) {
-      log.debug("Merging "+p.size()+".  Current path is '"+getPath()+"'");
+      log.debug("Merging "+p.size()+" new properties.  Current path is '"+getPath()+"'");
       log.debug("Merging, this.findSourceURL(): "+findSourceURL());
       log.debug("Merging, p.findSourceURL(): "+p.findSourceURL());
       
@@ -176,6 +176,45 @@ public class EProperties extends Properties {
          this.put(key, val);
       }
    }
+   
+   /** 
+    * Deep merge in more intelligent than merge.  Merge is draconian, 
+    * totally overwriting any property (including potentially deeply 
+    * nested properties) with the new value. 
+    * 
+    * Deep merge attempts to deal with nesting of properties.  Both strings 
+    * and list values are still treated as atomic, and overwritten. But
+    * deeper trees of properties a merged in a truer sense of the word.  It 
+    * is more additive, with the merging properties taking precidece, but
+    * not overwriting, rather merging deep trees.
+    */
+   public void deepMerge(EProperties p) {
+      log.debug("Deep-Merging "+p.size()+" new properties.  Current path is '"+getPath()+"'");
+      log.debug("Deep-Merging, this.findSourceURL(): "+findSourceURL());
+      log.debug("Deep-Merging, p.findSourceURL(): "+p.findSourceURL());
+      
+      List<Key> keys=p.getKeys();
+      for (Key key:keys) {
+         String keyString=key.toString();
+         
+         Object val=p.preSubstitutionGet(keyString);
+         
+         if (val instanceof EProperties) {
+            EProperties mergingProps=(EProperties)val;
+            
+            Object existingVal=preSubstitutionGet(keyString);
+            if (existingVal != null && existingVal instanceof EProperties) {
+               EProperties existingProps=(EProperties)existingVal;
+               existingProps.deepMerge(mergingProps);
+            } else {
+               this.put(keyString, val);
+            }
+         } else {
+            this.put(keyString, val);
+         }
+      }
+   }
+   
    
    /** See flatten(String delim). */
    public EProperties flatten() {
@@ -222,12 +261,12 @@ public class EProperties extends Properties {
             if (!empty(prefix))
                flat.put(prefix+delim+key, val.toString());
             else 
-               flat.put(key, val.toString());
+               flat.put(key.toString(), val.toString());
          } else {
             if (!empty(prefix))
                flat.put(prefix+delim+key, val.toString());
             else 
-               flat.put(key, val.toString());
+               flat.put(key.toString(), val.toString());
          }
       }
       return flat;
@@ -338,7 +377,24 @@ public class EProperties extends Properties {
             pw.println(pad+keystring+" = {");
             ((EProperties)value).list(pw, depth+1, printhits);
             pw.println(pad+"}");
-         } else {
+         } else if (value instanceof List) {
+//            String s=value.toString();
+//            // this will be a list starting and ending with []
+//            // replace those with ()
+//            s=s.substring(1, s.length()-1);
+            List l=(List)value;
+            StringBuilder sbb=new StringBuilder();
+            for (Object item:l) {
+               String sitem=item.toString();
+               sitem=sitem.replace("\"", "\\\""); // escape quotes in list strings.
+               sbb.append("\""+sitem+"\", ");
+            }
+            String s=sbb.toString();
+            // trim the final , 
+            s=s.substring(0, s.length()-2);
+            
+            pw.println (pad+"("+s+")");
+         }else {
             pw.println (pad+keystring+"="+value);
          }
       }
@@ -391,6 +447,9 @@ public class EProperties extends Properties {
     */
    @Override
    public synchronized Object put(Object k, Object v) {
+      if (k == null) {
+         throw new NullPointerException("Key cannot be null in EProperties.");
+      }
       Key key = null;
       // 
       if (k instanceof String) {
@@ -398,7 +457,7 @@ public class EProperties extends Properties {
       } else if (k instanceof Key) {
          key = (Key) k;
       } else {
-         throw new Error("Keys in EProperties must be [Key | String].");
+         throw new Error("Keys in EProperties must be [Key | String], not "+k.getClass().getName());
       }
       
       String keyString=key.toString();
@@ -620,7 +679,75 @@ public class EProperties extends Properties {
    private Object preSubstitutionGet(Object key) {
       return super.get(key);
    }
+   
+   /** */
+   public Object internalGetValue(Object key) {
+      // note, this key must be a Key, not a String
+      return super.get(key);
+   }
+   
+   /** */
+   public EProperties internalResolveProperties(String path) {
+      if (path.indexOf("->") == -1)
+         return this;
+      
+      String keys[] = path.split("\\-\\>");
+      
+      log.debug ("getComplexKey(): "+Arrays.asList(keys));
+      
+      EProperties next = this;
+      String currentPath = "";
+      
+      //StringBuilder path=new StringBuilder();
+      
+      for (int i = 0; i < keys.length - 1; i++) {
+         // currentPath is used for debugging.
+         if (currentPath.equals(""))
+            currentPath = keys[i];
+         else
+            currentPath = currentPath + "->" + keys[i];
 
+         Object nextTarget = next.get(keys[i]);
+         if (nextTarget == null) {
+            return null;
+         } else if (nextTarget instanceof EProperties) {
+            next = (EProperties) nextTarget;
+         } else {
+            log.debug("getComplexKey(): [" + path
+                  + "]: Returning null because object at path "
+                  + currentPath + " is not EProperties, it is "
+                  + nextTarget.getClass().getName());
+            return null;
+         }
+      }
+      // here, we are pointed at the correct eproperties object.
+      //return next.get(keys[keys.length-1]);
+      return next;
+   }
+   
+   /** */
+   public Key internalResolveKey(String path) {
+      EProperties p=null;
+      String finalKey=null;
+      if (path.indexOf("->") != -1) {
+         p=internalResolveProperties(path); // can return null;
+         
+         String keyelements[]=path.split("\\-\\>");
+         finalKey=keyelements[keyelements.length-1];
+      } else {
+         p=this;
+         finalKey=path;
+      }
+      if (p == null)
+         return null;
+      List<Key> keys=p.getKeys();
+      for (Key key:keys) {
+         if (key.toString().equals(finalKey))
+            return key;
+      }
+      return null;
+   }
+   
    /** */
    public Object get(String key, Object def) {
       Object ret = get(key);
@@ -715,6 +842,20 @@ public class EProperties extends Properties {
    }
    
    @Override
+   public Set<Map.Entry<Object, Object>> entrySet() {
+      // This sucks to have to do, but Entry is a private class in 
+      // hashmap.  And entrySet() is called fromn putAll().  Meaning I
+      // MUST override this or people who copy this properties object
+      // by constructing a new one, and calling putAll() and then assuming
+      // that the keys are strings will fail. (Spring.  Spring sucks.)
+      HashMap map=new HashMap();
+      for (Key key:keys) {
+         map.put(key.toString(), get(key));
+      }
+      return map.entrySet();
+   }
+   
+   @Override
    public Enumeration<String> propertyNames() {
       return keys();
    }
@@ -760,23 +901,7 @@ public class EProperties extends Properties {
       
       EPropertiesParser parser=new EPropertiesParser(cis);
       parser.setSourceURL(sourceURL);
-      
-      // Cache remote URLs.  Here, we need to know which URLs are local, 
-      // and which are remote.  We determine this from the sourceURL, if not
-      // null.  
-      // 
-      // The caching of remote URLs requires basically 2 'use cases': 
-      // 1) Initially, and repeatedly, we should write a cache copy of
-      //    the source properties stream.  
-      // 2) Later (at least after the first successful read), if the remote
-      //    resource is not available, we should:
-      //    a) attempt to load from the remote resource.
-      //    b) if the remote resource is not available, use the local 
-      //       cached copy.
-      // 
-      // Here, we are covering use case 1.  This is becasue all properties 
-      // loading happens at this location.
-      // unimplemented at 24 jul 09
+
       try {
          parser.parse(this);
       } catch (Exception ex) {
@@ -806,7 +931,7 @@ public class EProperties extends Properties {
    public void load(String surl) throws IOException {
       URL url=null;
       
-      surl=ClasspathURLUtil.convertClasspathURL(surl);
+      surl=URLUtil.convertClasspathURL(surl);
       
       String lcurl=surl.toLowerCase();
       
@@ -828,22 +953,17 @@ public class EProperties extends Properties {
       setSourceURL(url);
       InputStream is=null;
       try {
-//         URLConnection urlConnection=url.openConnection();
-//         
-//         // This should work for both file:// and http:// URLs.
-//         long tmp=urlConnection.getLastModified();
-//         
-//         is=url.openStream();
-         
          is=cacheManager.getInputStream(url);
          
          load(is);
-
-         if (is instanceof CacheInputStream) {
-            CacheInputStream cis=(CacheInputStream)is;
-            lastModification=cis.getLastModified();
-         }
-         //lastModification=tmp;
+         
+//         if (is instanceof CacheInputStream) {
+//            CacheInputStream cis=(CacheInputStream)is;
+//            lastModification=cis.getLastModified();
+//         }
+//         //lastModification=tmp;
+         
+         lastModification=URLUtil.lastMod(url);
          log.debug("Last Mod is '"+lastModification+"'");
       } finally {
          if (is != null)
@@ -853,9 +973,19 @@ public class EProperties extends Properties {
    
    /** */
    public boolean isSourceModified() {
+      // FIXME, 18 AUG 2010 - possible NPE. sourceURL could be null.
+      URL surl=sourceURL;
+      if (surl == null) {
+         surl=findSourceURL();
+      }
+      if (surl == null) 
+         return false;
+      
       try {
-         URLConnection con=sourceURL.openConnection();
-         long lastMod=con.getLastModified();
+         //URLConnection con=sourceURL.openConnection();
+         //URLConnection con=URLUtil.getConnection(surl);
+         
+         long lastMod=URLUtil.lastMod(surl);
          
          if (lastMod != lastModification) 
             return true;
@@ -879,6 +1009,8 @@ public class EProperties extends Properties {
       throws IOException {
       if (sourceURL != null) {
          load(sourceURL);
+      } else {
+         log.warn("reload() called on EProperties, but sourceURL is null.  noop.");
       }
    }
    
@@ -1047,8 +1179,8 @@ public class EProperties extends Properties {
             }
             
             // append this newline for whitespace readability
-            if (i != size-1)
-               w.write("\n");
+            //if (i != size-1)
+            //   w.write("\n");
          }
          // end of the for loop.
       } finally {
@@ -1153,6 +1285,7 @@ public class EProperties extends Properties {
       return getProperties(key.toString());
    }
 
+   
    private Object getWithComplexKey(String key) {
       // a complex key uses a pointer syntax find properties
       // deeper in a structure.
@@ -1169,7 +1302,7 @@ public class EProperties extends Properties {
       // The final key can return any type of object (String, Vector,
       // Properties),
       // however all of the initial keys must return a nested EProperties
-      // object. If they do not, then it is a runtime exception...
+      // object. If they do not, then it returns null.
       String keys[] = key.split("\\-\\>");
       
       log.debug ("getComplexKey(): "+Arrays.asList(keys));
@@ -1185,33 +1318,17 @@ public class EProperties extends Properties {
             currentPath = keys[i];
          else
             currentPath = currentPath + "->" + keys[i];
-         
-//         System.out.println ("getComplexKey(): i="+i+", keys[i]="+
-//         keys[i]+" currentPath='"+currentPath+"'");
-        
-         
-         // next=next.getProperties(keys[i]);
+
          Object nextTarget = next.get(keys[i]);
-         
-//         if (debug)
-//            System.out.println ("getComplexKey(): nextTarget is "+
-//               (nextTarget == null? "null":nextTarget.getClass().getName()));
-         
          if (nextTarget == null) {
-//            if (debug)
-//               System.out.println("getComplexKey(): [" + key
-//                     + "]: Returning null because object at path "
-//                     + currentPath + "==null)");
             return null;
          } else if (nextTarget instanceof EProperties) {
             next = (EProperties) nextTarget;
          } else {
-            // it is not an EProperties object!
-//            if (debug)
-//               System.out.println("getComplexKey(): [" + key
-//                     + "]: Returning null because object at path "
-//                     + currentPath + " is not EProperties, it is "
-//                     + nextTarget.getClass().getName());
+            log.debug("getComplexKey(): [" + key
+                  + "]: Returning null because object at path "
+                  + currentPath + " is not EProperties, it is "
+                  + nextTarget.getClass().getName());
             return null;
          }
       }
@@ -1470,5 +1587,15 @@ public class EProperties extends Properties {
          PropertyListener obs = listeners.get(i);
          obs.propertyChange(evt);
       }
+   }
+
+   @Override
+   public EProperties getPersistentValue() {
+      return this;
+   }
+
+   @Override
+   public Object getRuntimeValue() {
+      return this;
    }
 }

@@ -6,7 +6,7 @@ import java.util.*;
  * Represents a dynamic list value.
  *
  */
-class ListValue implements Value<List<String>> {
+public class ListValue implements Value<List<String>> {
    List<String> persistentValue=null;
    EProperties owner=null;
    

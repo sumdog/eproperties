@@ -4,7 +4,7 @@ package net.jmatrix.eproperties;
  * Represents a dynamic string value.
  *
  */
-class StringValue implements Value<String> {
+public class StringValue implements Value<String> {
    String persistentValue=null;
    EProperties owner=null;
    

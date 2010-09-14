@@ -215,7 +215,7 @@
     </target>
     
     <!-- Creates distributable artifacts. -->
-    <target name="dist" depends="test,assemble,javadoc">
+    <target name="dist" depends="clean,assemble,test,javadoc">
         <property name="build-id" value="${name}-${version}"/>
         <property name="dist-tmp" value="dist-tmp/${build-id}"/>
         <mkdir dir="${dist-tmp}"/>
@@ -240,6 +240,7 @@
         </zip>
         <!-- copy the jar, with dependencies, to the dist dir -->
         <copy file="build/${name}_deps-${version}.jar" todir="dist"/>
+        <copy file="build/${name}-${version}.jar" todir="dist"/>
     </target>
     
     <!--  Builds javadoc. -->

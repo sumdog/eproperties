@@ -1,1 +1,5 @@
-./run net.jmatrix.eproperties.cli.FileDiff $*
+#!/bin/bash
+
+BINDIR=`dirname $0`
+
+${BINDIR}/run net.jmatrix.eproperties.cli.FileDiff $*

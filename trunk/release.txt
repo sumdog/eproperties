@@ -6,6 +6,28 @@ Contact: Paul Bemowski, bemowski@yahoo.com
 
 ===============================================================================
 
+1.1.0
+  - Bundled all unreleased changes from 1.0.8RCx.  There were some significant
+    changes and additions.
+
+1.0.8 Unreleased
+  - Changed list() to list Lists with () rather than [].  This makes the 
+    output of list() parsable back to properties. Which is important because
+    toString() uses this.  The following should be true:
+    given EProperties props: 
+    EProperties p=new EProperties();
+    p.load(props.toString()) == props
+  - Changed merging logic on root includes to be 'deep merge'. This allows
+    included override files to define individual "deep" keys with complex
+    key puts.
+  - Updated all of the scripts in bin to operate in a location independent way.
+  - updated build.xml to make dist depend on clean.
+  - Support for un-secure https
+  - Support for basic authentication in URL, form http(s)://user:passwd@www.foo.com/
+  - Unit tests for isSourceModified()
+  - RC4
+    - Properties entrySet() and enumeration fixes.
+
 1.0.7 Released 30 July 2010
   - Added a System property to allow for disabling the properties caching
     mechanism. 

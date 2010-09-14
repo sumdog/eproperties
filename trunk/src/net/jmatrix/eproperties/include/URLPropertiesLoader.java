@@ -40,7 +40,7 @@ public class URLPropertiesLoader implements PropertiesLoader {
       //surl=surl.toLowerCase();
       
       // Translate classpath:// URLs to Java internal URLs.
-      surl=ClasspathURLUtil.convertClasspathURL(surl);
+      surl=URLUtil.convertClasspathURL(surl);
       String lcurl=surl.toLowerCase();
 //      if (surl.startsWith("classpath:/")) {
 //         System.out.println ("Found classpath URL: "+surl);

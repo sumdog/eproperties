@@ -24,13 +24,13 @@ public class CacheInputStream extends InputStream {
             cacheStream=new BufferedOutputStream(os);
       }
    }
-   
-   public long getLastModified() {
-      return lastModified;
-   }
-   public void setLastModified(long lastModified) {
-      this.lastModified = lastModified;
-   }
+//   
+//   public long getLastModified() {
+//      return lastModified;
+//   }
+//   public void setLastModified(long lastModified) {
+//      this.lastModified = lastModified;
+//   }
    
    /** There is little buffering or efficiency in overriding only this 
     * method - but as a quick and dirty first go, it is a simple way

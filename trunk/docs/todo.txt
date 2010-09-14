@@ -1,4 +1,81 @@
 
+This syntax does not work!!
+forums=
+{
+   name="Forums"
+   description="Index of Forum posts."
+   index="kb.forum"
+}
+
+---------------
+This syntax does not work: 
+
+property=
+
+Which should define the property as either null or the empty string, but currently
+just fails horribly.
+
+Also support:
+property="" 
+which is explicitly the empty string, and not null.
+
+---------------
+DTD style framework for declaring what properties a system or 
+subsystem REQUIRES to function.
+
+For instance, if a JDBC driver requires user, password and URL properties, then
+it could declare a little mini-properties DTD.  The properties could be 
+validated inbound based on this 'DTD'.  then we can validate and throw
+an InsufficientPropertiesException, which should contain all missing properties
+or invalid values.  
+
+Ala XML Schema, define properties DTD in terms of properties.
+
+PTD={
+   user={
+      type="String"
+      required=true
+      message="Driver requires user property."
+   }
+   password={
+      type="String"
+      required=true
+   }
+   url={
+      type="String"
+      required=true
+   }
+   
+   port={
+      type=Integer
+      required=false
+      range.low=1
+      range.high=1024
+   }
+   
+   hosts={
+      type="List"
+      required=false
+   }
+   
+   extended={
+      type="EProperties"
+      required=false
+      
+   }
+}
+----------------
+
+
+Highlight syntax diffs for escaping special characters in the documentation.
+Specifically, things like \f, \n, \t, \r are parsed differntly by 
+java.util.Properties and EProperties.
+
+Wrap parse errors, and try to make them more readable
+  - Column, line AND file.  Filenames/url not currently included in exception
+    making syntax errors in included properties a problem.
+
+
 Support classpath URLs
  classpath://net/jmatrix/test/foo.properties
    - System classloader or local classloader
