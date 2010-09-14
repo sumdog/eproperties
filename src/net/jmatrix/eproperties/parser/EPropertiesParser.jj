@@ -106,7 +106,7 @@ TOKEN:
 
 TOKEN : /* the keywords and comparators - QUOTEDVALUE accounts for escaped quotes as well */
 {
-     < KEY_STRING : (["A"-"Z","a"-"z","0"-"9", ".", "_", "-", "/", "%"])+ >
+     < KEY_STRING : (["A"-"Z","a"-"z","0"-"9", ".", "_", "-", "/", "%", ">"])+ >
      | <COMMENT: "#"  (~["\r", "\n"])* ("\n"| "\r" | "\r\n")? > : DEFAULT
      | <INCLUDE_URL: "["  (~["\r", "\n", "]"])* ("]") > : DEFAULT
 //    |   < QUOTED_STRING: "\"" (~["\""] | "\\\"")* "\"" > 
@@ -269,7 +269,9 @@ EProperties eproperties(EProperties p, EProperties par) :
            if (includeResult != null) {
               
               if (includeResult instanceof EProperties) {
-                 p.merge((EProperties)includeResult);
+                 log.debug("Merging root include w/ parent properties.");
+                 //p.merge((EProperties)includeResult);
+                 p.deepMerge((EProperties)includeResult);
               } else {
                  log.error("RootInclude: includeResult cannot be instance of "+
                        includeResult.getClass().getName());

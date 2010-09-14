@@ -5,6 +5,10 @@ import java.net.*;
 import java.text.*;
 import java.util.Date;
 
+import javax.net.ssl.HttpsURLConnection;
+
+import net.jmatrix.eproperties.utils.URLUtil;
+
 import org.apache.commons.logging.*;
 
 /**
@@ -130,8 +134,10 @@ public class CacheManager {
          throw new IOException ("Cannot open input stream for null URL.");
       }
       
-      if (!online)
-         return url.openStream();
+      if (!online) {
+         URLConnection urlConn=URLUtil.getConnection(url);
+         return urlConn.getInputStream();
+      }
       
       InputStream pis=null;
       String surl=url.toExternalForm();
@@ -141,10 +147,12 @@ public class CacheManager {
       log.debug("CacheFile: "+cacheFile.getAbsolutePath());
       
       try {
-         //InputStream ris=url.openStream();
-         URLConnection urlConn=url.openConnection();
+         URLConnection urlConn=URLUtil.getConnection(url);
          
-         long lastMod=urlConn.getLastModified();
+//         log.debug("URLConnection is a "+urlConn.getClass().getName());
+//         if (urlConn instanceof HttpsURLConnection) {
+//            log.debug("Connection is a javax.net.ssl.HttpsURLConnection");
+//         }
          
          InputStream ris=urlConn.getInputStream();
          
@@ -154,7 +162,7 @@ public class CacheManager {
             OutputStream cos=getCacheOutputStream(surl, cacheFile);
             CacheInputStream cis=new CacheInputStream(ris, cos);
             
-            cis.setLastModified(lastMod);
+            //cis.setLastModified(lastMod);
             pis=cis;
          } catch (Exception ex) {
             // Can't create cache file or stream.
@@ -162,10 +170,11 @@ public class CacheManager {
             log.debug("Continuing with remote input stream as properties stream. Uncached.");
             pis=ris;
          }
-      } catch (Exception ex) {
+      } catch (IOException ex) {
          log.warn("Remote stream unavailable for URL "+url+" due to "+ex.toString());
-         log.debug("Remote stream stack: ", ex);
-         
+         log.warn("Looking for cache file at "+cacheFile.getAbsolutePath());
+         //log.debug("Remote stream stack: ", ex);
+
          if (cacheFile.exists() && cacheFile.canRead()) {
             log.info("Cache file "+cacheFile.getAbsolutePath()+" exists. Attempting to use.");
             DateFormat df=new SimpleDateFormat("dd.MMM.yyyy HH:mm:ss");
@@ -173,8 +182,9 @@ public class CacheManager {
             FileInputStream fis=new FileInputStream(cacheFile);
             pis=new CacheInputStream(fis, null);
          } else {
-            throw new IOException("Properties cache file does not exist at "+
-                  cacheFile.getAbsolutePath()+" for URL "+url);
+            throw ex;
+            //throw new IOException("Properties cache file does not exist at "+
+            //      cacheFile.getAbsolutePath()+" for URL "+url);
          }
       }
       
@@ -185,7 +195,11 @@ public class CacheManager {
     * Sets the system property eproperties.cache to false.*/
    public static final void disable() {
       if (instance != null) {
-         log.error("CacheManager: Call to disable() after CacheManager instance already created.  Ignored.");
+         log.error("CacheManager: Call to disable() after CacheManager instance already created.  Disabling. Cannot re-enable.");
+         
+         // This was mostly added for unit tests.
+         instance.online=false;
+         instance.state="Offline, disabled by static method call.";
       } else {
          System.setProperty(EPROPERTIES_CACHE, "false");
       }

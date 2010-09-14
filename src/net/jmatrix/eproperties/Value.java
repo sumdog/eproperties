@@ -32,7 +32,7 @@ package net.jmatrix.eproperties;
  * tree. Either mechanism may be used, however changes to "foo" must be
  * immediately reflected in "bar".  
  */
-interface Value<T> {
+public interface Value<T> {
    // Value - concept and implementations coded 26 Nov 2008, B757 ATL-SEA
    public T getPersistentValue();
    public Object getRuntimeValue();

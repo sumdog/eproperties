@@ -1,17 +1,17 @@
 #!/bin/bash
 
-JAR_DIR=../jars
-export LOCALCLASSPATH=
 
-for jar in `ls $JAR_DIR/*jar`
-do
-    LOCALCLASSPATH=$LOCALCLASSPATH:$jar
-done
+BINDIR=`dirname $0`
 
-LOCALCLASSPATH=$LOCALCLASSPATH:../classes
+. $BINDIR/../version.properties
 
-echo Local CP: $LOCALCLASSPATH
+echo "EProperties version=${version}"
 
+JAR_DIR=$BINDIR/../
+
+export LOCALCLASSPATH=$JAR_DIR/eproperties_deps-${version}.jar
+
+echo CP: $LOCALCLASSPATH
 
 java $JAVA_OPTIONS -cp $LOCALCLASSPATH $*
 

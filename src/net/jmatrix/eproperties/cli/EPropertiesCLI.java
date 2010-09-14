@@ -35,6 +35,9 @@ public class EPropertiesCLI {
          System.out.println ("Setting root logger to debug.");
          Logger logger=Logger.getLogger("");
          logger.setLevel(Level.FINEST);
+         
+         logger=Logger.getLogger(EProperties.class.getName());
+         logger.setLevel(Level.FINE);
       } else {
          Logger logger=Logger.getLogger("");
          logger.setLevel(Level.INFO);
@@ -55,8 +58,12 @@ public class EPropertiesCLI {
       
       props.load(url);
       
+      
       System.out.println ("---- listing ----");
-      props.list(System.out);
+      if (ap.getBooleanArg("-flatten", false))
+         props.flatten(".").list(System.out);
+      else
+         props.list(System.out);
       System.out.println ("---- end listing ----");
    }
 }
