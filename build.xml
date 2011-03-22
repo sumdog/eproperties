@@ -204,6 +204,7 @@
 
             
             <formatter type="plain"/>
+            <formatter type="xml"/>
             
             <batchtest todir="build/junit.report">
               <fileset dir="test">
@@ -252,7 +253,7 @@
        <property name="DOCTITLE" value="EProperties ${version} &lt;br/&gt; Generated ${TODAY}" />
 
        <javadoc destdir="build/docs/javadoc" 
-                maxmemory="128m" private="true" 
+                maxmemory="128m"
                 author="true" windowtitle="${TITLE}" doctitle="${DOCTITLE}"
                 additionalparam="-linksource">
            <fileset dir="." includes="src/**/*.java,build/gen/**/*.java" excludes="**/*.properties,**/*.jj"/>
