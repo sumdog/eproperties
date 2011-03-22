@@ -393,7 +393,7 @@ public class EProperties extends Properties implements Value<EProperties> {
             // trim the final , 
             s=s.substring(0, s.length()-2);
             
-            pw.println (pad+"("+s+")");
+            pw.println (pad+keystring+"=("+s+")");
          }else {
             pw.println (pad+keystring+"="+value);
          }
