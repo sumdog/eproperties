@@ -1,0 +1,108 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    package net.jmatrix.eproperties.cli;<a name="line.1"></a>
+<FONT color="green">002</FONT>    <a name="line.2"></a>
+<FONT color="green">003</FONT>    import java.io.File;<a name="line.3"></a>
+<FONT color="green">004</FONT>    import java.util.List;<a name="line.4"></a>
+<FONT color="green">005</FONT>    <a name="line.5"></a>
+<FONT color="green">006</FONT>    import net.jmatrix.eproperties.*;<a name="line.6"></a>
+<FONT color="green">007</FONT>    <a name="line.7"></a>
+<FONT color="green">008</FONT>    public class EPropertify {<a name="line.8"></a>
+<FONT color="green">009</FONT>    <a name="line.9"></a>
+<FONT color="green">010</FONT>       /**<a name="line.10"></a>
+<FONT color="green">011</FONT>        * @param args<a name="line.11"></a>
+<FONT color="green">012</FONT>        */<a name="line.12"></a>
+<FONT color="green">013</FONT>       public static void main(String[] args) throws Exception  {<a name="line.13"></a>
+<FONT color="green">014</FONT>          ArgParser ap=new ArgParser(args);<a name="line.14"></a>
+<FONT color="green">015</FONT>          <a name="line.15"></a>
+<FONT color="green">016</FONT>          // should be<a name="line.16"></a>
+<FONT color="green">017</FONT>          // epropertify -i &lt;infile/url&gt; -o &lt;outfile&gt; -d &lt;delimeter&gt;<a name="line.17"></a>
+<FONT color="green">018</FONT>          <a name="line.18"></a>
+<FONT color="green">019</FONT>          String in=ap.getStringArg("-i");<a name="line.19"></a>
+<FONT color="green">020</FONT>          String out=ap.getStringArg("-o");<a name="line.20"></a>
+<FONT color="green">021</FONT>          String delim=ap.getStringArg("-d", ".");<a name="line.21"></a>
+<FONT color="green">022</FONT>          <a name="line.22"></a>
+<FONT color="green">023</FONT>          EProperties inProps=new EProperties();<a name="line.23"></a>
+<FONT color="green">024</FONT>          inProps.load(in);<a name="line.24"></a>
+<FONT color="green">025</FONT>          inProps=inProps.flatten(delim);<a name="line.25"></a>
+<FONT color="green">026</FONT>          <a name="line.26"></a>
+<FONT color="green">027</FONT>          EProperties outProps=new EProperties();<a name="line.27"></a>
+<FONT color="green">028</FONT>          File outFile=new File(out);<a name="line.28"></a>
+<FONT color="green">029</FONT>          <a name="line.29"></a>
+<FONT color="green">030</FONT>          <a name="line.30"></a>
+<FONT color="green">031</FONT>          List&lt;Key&gt; keys=inProps.getKeys();<a name="line.31"></a>
+<FONT color="green">032</FONT>          for (Key key:keys) {<a name="line.32"></a>
+<FONT color="green">033</FONT>             String skey=key.toString();<a name="line.33"></a>
+<FONT color="green">034</FONT>             String newkey=skey.replace(delim, "-&gt;");<a name="line.34"></a>
+<FONT color="green">035</FONT>             System.out.println (skey+" -&gt;   "+newkey);<a name="line.35"></a>
+<FONT color="green">036</FONT>             <a name="line.36"></a>
+<FONT color="green">037</FONT>             outProps.put(newkey, inProps.get(skey));<a name="line.37"></a>
+<FONT color="green">038</FONT>          }<a name="line.38"></a>
+<FONT color="green">039</FONT>          <a name="line.39"></a>
+<FONT color="green">040</FONT>          outProps.save(outFile);<a name="line.40"></a>
+<FONT color="green">041</FONT>       }<a name="line.41"></a>
+<FONT color="green">042</FONT>    }<a name="line.42"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>
