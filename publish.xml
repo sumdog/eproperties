@@ -36,8 +36,8 @@
         username="${svn.username}" 
         password="${svn.pass}" 
         projectname="eproperties" 
-        filename="dist/eproperties_-${version}.tar.gz" 
-        targetfilename="eproperties_-${version}.tar.gz"
+        filename="dist/eproperties-${version}.tar.gz" 
+        targetfilename="eproperties-${version}.tar.gz"
         summary="Tarball with everything - code, docs, jars."
         labels="Featured, Type-Package, OpSys-All" />
         
@@ -46,8 +46,8 @@
         username="${svn.username}" 
         password="${svn.pass}" 
         projectname="eproperties" 
-        filename="dist/eproperties_-${version}.zip" 
-        targetfilename="eproperties_-${version}.zip"
+        filename="dist/eproperties-${version}.zip" 
+        targetfilename="eproperties-${version}.zip"
         summary="Zip file with everything - code, docs, jars."
         labels="Type-Package, OpSys-All" />
    </target>
