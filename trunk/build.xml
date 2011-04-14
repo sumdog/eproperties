@@ -186,6 +186,13 @@
         </jar>
     </target>
     
+    <target name="tag-svn" depends="init">
+        <property name="svn.url" value="https://eproperties.googlecode.com/svn/"/>
+        <exec executable="svn">
+           <arg line="-m &quot;&quot; ${svn.url}/trunk ${svn.url}/tags/${version}"/>
+        </exec>
+    </target>
+    
     <target name="test" depends="compile-tests">
         <mkdir dir="build/junit.report"/>
         
