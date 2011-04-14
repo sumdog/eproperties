@@ -187,9 +187,9 @@
     </target>
     
     <target name="tag-svn" depends="init">
-        <property name="svn.url" value="https://eproperties.googlecode.com/svn/"/>
+        <property name="svn.url" value="https://eproperties.googlecode.com/svn"/>
         <exec executable="svn">
-           <arg line="-m &quot;&quot; ${svn.url}/trunk ${svn.url}/tags/${version}"/>
+           <arg line="-m &quot;&quot; copy ${svn.url}/trunk ${svn.url}/tags/${version}"/>
         </exec>
     </target>
     
