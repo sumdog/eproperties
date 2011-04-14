@@ -68,7 +68,8 @@ EOL = ? End of line character ?;
 concept of <a href="#substitution">substitution</a>.  This is actually by 
 design - because substitution is not processed at <b>parse</b> time, rather
 subsitutions are processed when the value is requested from the 
-EProperties object.</p>
+EProperties object.  (Substitutions may be validated at load time, and
+print warnings, but actual substitution happens at runtime)</p>
 
 <!-- ========================== BASIC ===================== -->
 <h3><a name="basic">Basic</a></h3>
@@ -245,7 +246,9 @@ message="Hello <b>${location}</b>"
 
 <p><b>Note:</b> Substitution processing happens, and keys are resolved to 
 values and replaced when the value is requested from the properties object, and
-not before.  Substitution DOES NOT happen at parse time, but rather at runtime.</p>
+not before.  Substitution DOES NOT happen at parse time, but rather at runtime.
+(note: substitutions may be evaluated at parse time and print warnings, 
+a behavior that can be disabled via EProperties.validateOnLoad.</p>
 
 <h4><a name="resolving">Resolving Substitution Values: the back-search algorithm</a></h4>
 
