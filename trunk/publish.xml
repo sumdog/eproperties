@@ -1,0 +1,19 @@
+<project name="eproperties" default="all" basedir=".">
+
+   <target name="init">
+       <property file="publish.properties"/>
+       <taskdef classname="net.bluecow.googlecode.ant.GoogleCodeUploadTask" classpath="build.tools/ant-googlecode-0.0.2.jar" name="gcupload"/>
+   </target>
+   
+   
+   <target name="publish" depends="init,dist">
+      <gcupload 
+        username="${svn.username}" 
+        password="${svn.pass}" 
+        projectname="eproperties" 
+        filename="dist/eproperties-${version}.jar" 
+        targetfilename="eproperties-${version}.jar"
+        summary="EProperties jar file. (Requires commons-logging available in the classpath)"
+        labels="Featured, Type-Archive, OpSys-All" />
+   </target>
+</project>
