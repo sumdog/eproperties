@@ -8,6 +8,7 @@ Contact: Paul Bemowski, bemowski@yahoo.com
 
 1.1.1 
   - Fixed list(), not printing key on lists.
+  - Google Issue 2: Added boolean to disable validation on load.
 
 1.1.0 Released 14 Sep 2010
   - Bundled all unreleased changes from 1.0.8RCx.  There were some significant
