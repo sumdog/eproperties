@@ -30,6 +30,10 @@ public class EProperties extends Properties implements Value<EProperties> {
    /** When set to true, EProperties will emit some debug logging. */
    public static boolean debug=false;
    
+   /** When set to true, eproperties will print warnings for potentially 
+    * unresolved substitutions.  */
+   public static boolean validateOnLoad=true;
+   
    /** This is a formatting option for the 'save' function. */
    public static int INDENT_SPACES=3;
    
@@ -918,8 +922,8 @@ public class EProperties extends Properties implements Value<EProperties> {
             }
          }
       }
-      
-      validate();
+      if (validateOnLoad)
+         validate();
    }
    
    /**
