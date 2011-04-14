@@ -1,0 +1,95 @@
+
+Release notes for EProperties.
+
+
+Contact: Paul Bemowski, bemowski@yahoo.com
+
+===============================================================================
+
+1.1.1 
+  - Fixed list(), not printing key on lists.
+  - Google Issue 2: Added boolean to disable validation on load.
+  - Added automated publish stuff.
+
+1.1.0 Released 14 Sep 2010
+  - Bundled all unreleased changes from 1.0.8RCx.  There were some significant
+    changes and additions.
+
+1.0.8 Unreleased
+  - Changed list() to list Lists with () rather than [].  This makes the 
+    output of list() parsable back to properties. Which is important because
+    toString() uses this.  The following should be true:
+    given EProperties props: 
+    EProperties p=new EProperties();
+    p.load(props.toString()) == props
+  - Changed merging logic on root includes to be 'deep merge'. This allows
+    included override files to define individual "deep" keys with complex
+    key puts.
+  - Updated all of the scripts in bin to operate in a location independent way.
+  - updated build.xml to make dist depend on clean.
+  - Support for un-secure https
+  - Support for basic authentication in URL, form http(s)://user:passwd@www.foo.com/
+  - Unit tests for isSourceModified()
+  - RC4
+    - Properties entrySet() and enumeration fixes.
+
+1.0.7 Released 30 July 2010
+  - Added a System property to allow for disabling the properties caching
+    mechanism. 
+    - Requested by Miglena Rousseva.
+  - More rigidly defined, executed and tested escaping rules.
+    - See docs/EscapingRules.xls for details on designed function  
+    - Design goal is to match behavior of java.util.Properties for simple 
+      properties wherever possible. Series of unit tests confirm this.
+  - Fixed critical bug in the EProperties.put() code when called from
+    the parser.  Was using the full key string (including comments) as
+    the property key - rather than the key itself.  Don't know how this
+    one got by earlier testing.  Now covered by unit test.
+  - Allow comment lines embedded in lists.  This is a parser update, but 
+    seems to work in available test cases.
+  - Support for classpath:/ style URLs.  This allows a file to include
+    properties from a classapth - and supports relative inclusion, etc.
+    
+  - Added printing of version and project URL info on class loading.
+  - Added PDiff/FileDiff
+  - Added Hit counters on keys.  Useful in tracking what properties are used
+    and what properties are not used.  
+
+1.0.6 Released 27 May 2010
+  - Changes from Fred Hart - 
+    - changed parser to better support legacy characters
+    - changed default delimiter character in the CacheManager to support Windows
+
+
+1.0.5 Released 10 Feb 2010
+  - Fixed bug in put with complex key, found by Randall Theobald 
+  
+1.0.4 Released 9 Feb 2010
+  - Added put with complex keys, that works as you would expect after
+    understanding complex keys.
+  - Added flatten method with custom delimeter for Fred Hart.
+
+1.0.3 Released Feb 6 2010
+  - Fixed potential NPE in the toString() method.  toString is now over
+    ridden, and returns the same value as the list() method.
+  - Updates to Lists
+    - Added a getList(String key, List<String>def) method - allowing the
+      user to get lists with default values.
+    - Added a function to convert a CSV String to a list when the
+      getList() method is called, and the value is a String.
+  - Updates to JavaDoc
+
+1.0.2 Released 24 Nov 2009
+  - Fixed CacheManager when EProperties.load(InputStream) was called.  It 
+    was throwing an NPE.
+  - Added unit testing stuff, including build time tests.
+  - Added tests for loading properties via InputStream and zip/jar URL.
+
+1.0.1 
+  - Packaging for deployment
+
+
+1.0.0    Unreleased.  
+  - This version defines the starting point for the open source version 
+    of extended properties.
+  - This version is checked into SVN, but was never packaged for deployment.
