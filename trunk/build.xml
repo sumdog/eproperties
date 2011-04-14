@@ -1,5 +1,6 @@
 <project name="eproperties" default="all" basedir=".">
-   
+    <import file="publish.xml"/>
+    
    <!-- The equivalent of 'make all' -->
    <target name="all" depends="init,assemble" />
 
