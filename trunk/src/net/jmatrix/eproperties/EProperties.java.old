@@ -1,0 +1,1273 @@
+package net.jmatrix.eproperties;
+
+import java.util.*;
+import java.io.*;
+import java.util.regex.*;
+
+import java.util.logging.*;
+
+import static java.util.logging.Level.*;
+
+import net.jmatrix.eproperties.parser.*;
+
+/**
+ * Extended Properties class is a more capable version of 
+ * <pre>java.util.Properties</pre>.  This class has provisions for 
+ * reading and writing vectors and hashtables.<p>
+ * 
+ * EProperties parsing should be re-considered using a javacc parser:
+ * http://www.ibm.com/developerworks/xml/library/x-javacc1.html
+ * http://www.javaworld.com/javaworld/jw-12-1996/jw-12-jack.html
+ * SableCC
+ * Antlr
+ *
+ * @author Paul Bemowski
+ * @see java.util.Properties
+ */
+public class EProperties extends Properties {
+   static Logger log = Logger.getLogger("EProperties");
+
+   /** */
+   private static final int EOF = -1;
+
+   /** */
+   public static boolean debug = false;
+
+   private List<Key> keys = new ArrayList<Key>();
+
+   /** This is the file from which this property input stream was read. */
+   private File sourceFile = null;
+
+   /** Used to give the approximate line number of an error. */
+   private int lineNumber = 0;
+
+   private List<PropertyListener> listeners = null;
+
+   EProperties parent = null;
+   
+   String path="";
+
+   /**
+    * We are promoting environments all the time.  If the data
+    * has not changed, we don't need to promote (it gives annoying
+    * debugging when it promotes). So, we will hold a hash
+    * of booleans indicating that a given environment has been
+    * promoted since the last modification. Upon modification 
+    * (via load or set) we will empty this hashmap so that if
+    * the environments were touched, they will be re-promoted.
+    */
+   HashMap environsPromoted = new HashMap();
+
+   private static final char escapeChars[] = { 
+      '\\', // Possibly used in path description on nt.
+      '\"', // Defines string val
+   //'\n',       // new line
+   //'(', ')',   // Defines vector
+   //'{', '}'    // Defines hashtable
+   };
+
+   static {
+
+   }
+
+   /**
+    *
+    */
+   public EProperties() {
+      super();
+   }
+
+   /**
+    *
+    */
+   public EProperties(Hashtable h) // This will cover properties too.
+   {
+      for (Enumeration keys = h.keys(); keys.hasMoreElements();) {
+         Object key = keys.nextElement();
+         Object val = h.get(key);
+
+         put(key, val);
+      }
+   }
+
+   /**
+    *
+    */
+   public EProperties(Properties p) {
+      this((Hashtable) p);
+   }
+
+   /** Resets the modification booleans. */
+   private void setModified() {
+      // System.out.println ("Resetting environsPromoted");
+      environsPromoted = new HashMap();
+   }
+
+   /**
+    *
+    */
+   public File getSourceFile() {
+      File f = sourceFile;
+      EProperties next = parent;
+      while (next != null && f == null) {
+         f = next.sourceFile;
+         next = next.parent;
+      }
+      return f;
+   }
+
+   /**
+    *
+    */
+   public void setSourceFile(File file) {
+      sourceFile = new File(file.getAbsolutePath());
+   }
+
+   /** */
+   public Object get(String key, Object def) {
+      Object ret = super.get(key);
+      if (ret == null)
+         return def;
+      else
+         return ret;
+      }
+
+   
+   ////////////////// Key based accessors  ///////////////
+   public EProperties getProperties(Key key) {return getProperties(key.toString());}
+   
+   /** this is the 'master' retieval method. */
+   public Object get(String key) {
+      if (key.indexOf("->") > 0)
+         return getWithComplexKey(key);
+      return this.get(key, null);
+   }
+   
+   private Object getWithComplexKey(String key) {
+      // a complex key uses a pointer syntax find properties 
+      // deeper in a structure.
+      // for instance:
+      // String s=(String)get("system->user.home");
+      // is equivalent to
+      // String s=(String)getProperties("system").get("user.home");
+      //
+      // Which brings up the issue of error handling. What if one of the
+      // indirections returns a null nested property object!!
+      // At that we will throw.  
+      //
+      // The final key can return any type of object (String, Vector, Properties), 
+      // however all of the initial keys must return a nested EProperties 
+      // object.  If they do not, then it is a runtime exception...
+      String keys[]=key.split("\\-\\>");
+      
+      EProperties next=this;
+      String currentKey="";
+      for (int i=0; i<keys.length-1; i++) {
+         if (currentKey.equals(""))
+            currentKey=keys[i];
+         else
+            currentKey=currentKey+"->"+keys[i];
+         //next=next.getProperties(keys[i]);
+         Object nextTarget=next.get(keys[i]);
+         if (nextTarget == null) {
+            if (debug)
+               System.out.println ("getComplexKey(): ["+path+
+                     "]: Returning null because object at indirection "+
+                    currentKey+"==null)");
+            return null;
+         } else if (nextTarget instanceof EProperties) {
+            next=(EProperties)nextTarget;
+         } else {
+            // it is not an EProperties object!
+            if (debug) 
+               System.out.println ("getComplexKey(): ["+path+
+                     "]: Returning null because object at indirection "+
+                     currentKey+" is not EProperties, it is "+
+                     nextTarget.getClass().getName());
+            return null;
+         }
+      }
+      // here, we are pointed at the correct eproperties object.
+      return next.get(key);
+   }
+
+   /** */
+   public Object get(int keyNum) {
+      return super.get(getKey(keyNum));
+   }
+
+   /** */
+   public Object put(Object key, Object val) {
+      setModified();
+      Key theKey = null;
+
+      if (key instanceof String)
+         theKey = new Key((String) key);
+      else if (key instanceof Key) {
+         theKey = (Key) key;
+      } else {
+         throw new IllegalArgumentException("Key must be a Key or String");
+      }
+      // Prevent duplicate keys, and preserve order
+      if (keys.indexOf(theKey) == -1)
+         keys.add(theKey);
+      else {
+         Key existingKey = keys.get(keys.indexOf(theKey));
+         existingKey.notifyListeners(val);
+      }
+
+      Object returnVal = super.put(theKey, val);
+
+      if (this.listeners != null) {
+         notifyListeners(theKey, val);
+      }
+
+      return returnVal;
+   }
+
+   /**
+    */
+   public Object insert(Object key, Object val, int index) {
+      setModified();
+      Key theKey = null;
+
+      if (key instanceof String)
+         theKey = new Key((String) key);
+      else if (key instanceof Key) {
+         theKey = (Key) key;
+      } else {
+         throw new IllegalArgumentException("Key must be a Key or String");
+      }
+
+      // Prevent duplicate keys, and preserve order
+      if (keys.indexOf(theKey) == -1)
+         keys.add(index, theKey);
+      else {
+         Key existingKey = (Key) keys.get(keys.indexOf(theKey));
+         existingKey.notifyListeners(val);
+      }
+
+      Object returnVal = super.put(theKey, val);
+
+      if (this.listeners != null) {
+         notifyListeners(theKey, val);
+      }
+
+      return returnVal;
+   }
+
+   /** */
+   public Object remove(Object key) {
+      setModified();
+      Key theKey = null;
+
+      if (key instanceof String)
+         theKey = new Key((String) key);
+      else if (key instanceof Key) {
+         theKey = (Key) key;
+      } else {
+         throw new IllegalArgumentException("Key must be a Key or String");
+      }
+
+      boolean success = keys.remove(theKey);
+      if (debug && !success)
+         System.out.println("Error removeing '" + key + "' from key vector.");
+
+      Object returnVal = super.remove(theKey);
+
+      if (this.listeners != null) {
+         notifyListeners(theKey, returnVal);
+      }
+
+      return returnVal;
+   }
+
+   /** */
+   public String getProperty(String key) {
+      return getProperty(key, null);
+   }
+
+   /** */
+   public String getProperty(String key, String def) {
+      Object val = get(key);
+      if (val == null)
+         return def;
+      if (val instanceof String)
+         return (String) val;
+      else
+         return def;
+   }
+
+   /** */
+   public String getString(String key) {
+      return getProperty(key);
+   }
+
+   /** */
+   public String getString(String key, String def) {
+      return getProperty(key, def);
+   }
+
+   /** */
+   public List getVector(String key) {
+      Object val = get(key);
+      if (val == null)
+         return null;
+      if (val instanceof Vector)
+         return (Vector) val;
+      return null;
+   }
+   
+   /** */
+   public List getList(String key) {
+      return getVector(key);
+   }
+
+   private final File findSourceFile() {
+      EProperties props = this;
+      File f = sourceFile;
+      while (f == null && props != null) {
+         props = props.parent;
+         f = props.sourceFile;
+      }
+      return f;
+   }
+
+   /** */
+   public EProperties getProperties(int i) {
+      return getProperties("" + getKey(i));
+   }
+
+   /** */
+   public EProperties getProperties(String key) {
+      Object val = get(key);
+      if (val == null)
+         return null;
+
+      if (val instanceof String) {
+         String sval = (String) val;
+
+         if (sval.startsWith("[") && sval.endsWith("]")) { // this is an include
+            // try to load it
+            String file = sval.substring(1, sval.length() - 1);
+            if (debug)
+               System.out.println ("Loading " + file);
+
+            File sf = findSourceFile();
+
+            if (sf == null)
+               throw new RuntimeException("Source file is null, cannot load");
+
+            String path = sf.getParent(); // FileUtil.getPath(sf.getAbsolutePath());
+            if (debug)
+               System.out.println ("Indlude: parent file path="+path);
+
+            if (file.startsWith("./"))
+               file = path + file.substring(1);
+            else if (file.startsWith("/"))
+               file = path + file;
+            else
+               file = path + "/" + file;
+
+            System.out.println("Attempting to load from " + file);
+            EProperties eprops = new EProperties();
+            try {
+               eprops.load(file, key, this);
+               this.put(key, eprops);
+               return eprops;
+            } catch (FileNotFoundException ex) {
+               log.severe("Could not load properties from " + file);
+               return null;
+            } catch (Exception ex) {
+               log.log(SEVERE, "Unknown error loading included properties.", ex);
+               return null;
+            }
+         } else
+            return null;
+      } else if (val instanceof EProperties)
+         return (EProperties) val;
+      else
+         return null;
+   }
+
+   /** */
+   public boolean getBoolean(String key) {
+      return getBoolean(key, false);
+   }
+
+   /** */
+   public boolean getBoolean(String key, boolean def) {
+      Object val = get(key);
+      if (val == null)
+         return def;
+      if (val instanceof String) {
+         String s = (String) val;
+         if (s.indexOf("true") != -1 || s.indexOf("on") != -1)
+            return true;
+         else
+            return false;
+      } else
+         return def;
+   }
+   
+   /** */
+   public void putBoolean(String key, boolean value) {
+      setModified();
+      String val = null;
+      if (value)
+         val = "true";
+      else
+         val = "false";
+      put(key, val);
+   }
+
+   /** */
+   public void putInt(String key, int i) {
+      setModified();
+      String val = "" + i;
+      put(key, val);
+   }
+
+   /** */
+   public void putLong(String key, long l) {
+      setModified();
+      String val = "" + l;
+      put(key, val);
+   }
+
+   /** */
+   public int getInt(String key) {
+      return getInt(key, -1);
+   }
+
+   /** */
+   public int getInt(String key, int def) {
+      Object val = get(key);
+      if (val == null) {
+         return def;
+      }
+      if (val instanceof String) {
+         String s = (String) val;
+         try {
+            return Integer.parseInt(s.trim());
+         } catch (NumberFormatException ex) {
+            log.log(SEVERE, "Cannot parse int from " + s.trim()
+                  + ", returning default of " + def);
+            log.log(FINE, "Error parsing int from '"+s.trim()+"'", ex);
+            return def;
+         }
+      } else
+         return def;
+   }
+
+   /** */
+   public long getLong(String key) {
+      return getLong(key, -1);
+   }
+
+   /** */
+   public long getLong(String key, long def) {
+      Object val = get(key);
+      if (val == null)
+         return def;
+      if (val instanceof String) {
+         String s = (String) val;
+         try {
+            return Long.parseLong(s.trim());
+         } catch (NumberFormatException ex) {
+            log.log(SEVERE, "Cannot parse long from " + s.trim()
+                  + ", returning default of " + def);
+            log.log(FINE, "Error parsing long from '"+s.trim()+"'", ex);
+            return def;
+         }
+      } else
+         return def;
+   }
+
+   /** */
+   public float getFloat(String key) {
+      return getFloat(key, 0.0f);
+   }
+
+   /** */
+   public float getFloat(String key, float def) {
+      Object val = get(key);
+      if (val == null) {
+         return def;
+      }
+      if (val instanceof String) {
+         String s = (String) val;
+         try {
+            return Float.parseFloat(s.trim());
+         } catch (NumberFormatException ex) {
+            log.log(SEVERE, "Cannot parse float from " + s.trim()
+                  + ", returning default of " + def);
+
+            log.log(FINE, "Error parsing float from '"+s.trim()+"'", ex);
+            return def;
+         }
+      } else
+         return def;
+   }
+
+   /** */
+   public double getDouble(String key) {
+      return getDouble(key, 0.0f);
+   }
+
+   /** */
+   public double getDouble(String key, double def) {
+      Object val = get(key);
+      if (val == null) {
+         return def;
+      }
+      if (val instanceof String) {
+         String s = (String) val;
+         try {
+            return Double.parseDouble(s.trim());
+         } catch (NumberFormatException ex) {
+            log.log(SEVERE, "Cannot parse double from " + s.trim()
+                  + ", returning default of " + def);
+
+            log.log(FINE, "Error parsing double from '"+s.trim()+"'", ex);
+            return def;
+         }
+      } else
+         return def;
+   }
+
+   /** 
+    * This is a custom integer get.  It is much slowser than the 
+    * String key lookup that defaults to the hashtable method. <p>
+    *
+    * This will be used to retrieve the properties in order again
+    * after 
+    */
+   public Key getKey(int num) {
+      return keys.get(num);
+   }
+
+   /** */
+   public Key getKey(String keystr) {
+      Key akey = new Key(keystr);
+      //System.out.println ("Lookin for "+keystr+" in keys vector ");
+      int index = keys.indexOf(akey);
+      //System.out.println ("Found at "+index);
+      if (index > 0)
+         return keys.get(index);
+      else
+         return null;
+   }
+
+   /** */
+   public List<Key> getKeys() {
+      return keys;
+   }
+   
+   /** Returns a list of keys that start with the input string. */
+   public List<Key> getKeys(String s) {
+      List<Key> prefixKeys=new ArrayList<Key>();
+      int size=keys.size();
+      for (int i=0; i<size; i++) {
+         Key key=keys.get(i);
+         if (key.toString().startsWith(s))
+            prefixKeys.add(key);
+      }
+      return prefixKeys;
+   }
+   
+   public void setParent(EProperties p) {
+      parent=p;
+   }
+   
+   /**
+    * Load properties from a file represented by a string.
+    *
+    * @param filestr The name of the file containing eproperties.
+    */
+   public void load(String filestr) throws IOException, ParseException {
+      load(filestr, null, null);
+   }
+
+   private void load(String file, String key, EProperties p) 
+   throws IOException, ParseException {
+      load(new File(file), key, p);
+   }
+   
+   public void load(File f) throws IOException, ParseException {
+      load(f, null, null);
+   }
+   
+   /**
+    * Load properties from a file.
+    */
+   private void load(File file, String key, EProperties p)
+   throws IOException, ParseException {
+      sourceFile = new File(file.getAbsolutePath());
+      FileInputStream fis = null;
+      try {
+         fis = new FileInputStream(sourceFile);
+         load(fis, key, p);
+      } finally {
+         if (fis != null)
+            fis.close();
+      }
+   }
+
+   public void load(InputStream is) 
+   throws IOException {
+      try {
+         load(is, "", null);
+      } catch (ParseException ex) {
+         throw new IOException("Parse error in Properties.", ex);
+      }
+   }
+   
+   /**
+    *
+    */
+   private void load(InputStream is, String atpath, EProperties p) 
+   throws IOException, ParseException {
+      setModified();
+      path=atpath;
+      parent=p;
+      
+      if (p == null) {
+         // If the parent is null, then this is a root properties object
+         // Add the default system properties to the root object.
+         Key syskey=new Key("system");
+         syskey.setTransient(true);
+         Properties systemProps=System.getProperties();
+         put(syskey, new EProperties(systemProps));
+         if (debug)
+            System.out.println ("Parent object is null, added "+systemProps.size()+
+                  " system properties");
+      }
+      
+      EPropertiesParser parser=new EPropertiesParser(is);
+      
+      parser.parse(this);
+      
+      applyTokens();
+//      PropertyInputStream in = new PropertyInputStream(is);
+//
+//      try {
+//         Key key = getKey(in);
+//
+//         while (key != null) {
+//            if (debug)
+//               log.log(FINE, "EPLoad: key = " + key);
+//            Object val = getVal(in, key.toString());
+//            if (debug)
+//               log.log(FINE, "EPLoad: val = " + val.toString());
+//            
+//            //if (val instanceof EProperties) {
+//            //   EProperties pr=(EProperties)val;
+//               //pr.path=path+"->"+key.toString();
+//               //pr.applyTokens();
+//            //}
+//            
+//            this.put(key, val);
+//            
+//            if (val instanceof String) {
+//               String sval=(String)val;
+//               if (sval.startsWith("[") && sval.endsWith("]")) {
+//                  if (debug)
+//                     System.out.println ("Found include value "+key+" = "+sval);
+//                  getProperties(key); // load nested file
+//               }
+//            }
+//            key = getKey(in);
+//         }
+//      } catch (PropertyException ex) {
+//         throw new IOException("Error in property load.", ex);
+//         // log.printStackTrace(ex);
+//      }
+      
+
+   }
+
+   static final String TOKEN_REGEX="\\$\\{.*?\\}";
+   /** */
+   public void applyTokens() {
+      Pattern pattern=Pattern.compile(TOKEN_REGEX);
+      if (debug)
+         System.out.println ("Applying tokens at "+path);
+      
+      List<Key> keys=getKeys();
+      
+      int size=keys.size();
+      
+      for (int i=0; i<size; i++) {
+         Key key=keys.get(i);
+         
+         Object oval=get(key);
+         
+         if (oval instanceof String) {
+            
+            String val=(String)oval;
+            
+            String newVal=recursiveReplace(val);
+//            Matcher matcher=pattern.matcher(val);
+//            
+//            String newVal=val;
+//            while(matcher.find()) {
+//               String token=val.substring(matcher.start(), matcher.end());
+//               String tokenKey=token.substring(2, token.length()-1);
+//               
+//               String replaceVal=findProperty(tokenKey);
+//               
+//               if (replaceVal != null) {
+//                  newVal=newVal.replace(token, replaceVal);
+//               }
+//            }
+            
+            if (!newVal.equals(val)) {
+               put(key, newVal);
+               if (debug)
+                  System.out.println ("Replaced value '"+val+
+                        "' with '"+newVal+"'");
+            }
+         }
+      }
+   }
+   
+   // recursive matcher:
+   private String recursiveReplace(String val) {
+      Pattern pattern=Pattern.compile(TOKEN_REGEX);
+      
+      if (debug)
+         System.out.println ("   recursiveReplace(): Checking for tokens in '"+val+"'");
+      
+      Matcher matcher=pattern.matcher(val);
+      
+      String newVal=val;
+      while(matcher.find()) {
+         String token=val.substring(matcher.start(), matcher.end());
+         String tokenKey=token.substring(2, token.length()-1);
+         
+         String replaceVal=findProperty(tokenKey);
+         
+         if (replaceVal != null) {
+            newVal=newVal.replace(token, replaceVal);
+         }
+      }
+      
+      if (newVal.equals(val))
+         return newVal;
+      else
+         return recursiveReplace(newVal);
+   }
+   
+   /**
+    * This method will search up a tree of EProoperties objects, looking for 
+    * a match.  It will return the first match.
+    * 
+    * @param s
+    * @return
+    */
+   public String findProperty(String s) {
+      String val=getString(s, null);
+      if (debug) {
+         System.out.println ("findProperty(): "+path+" "+s+"="+val);
+      }
+      
+      if (val != null)
+         return val;
+      else {
+         if (parent != null) {
+            return parent.findProperty(s);
+         } else {
+            if (debug)
+               System.out.println ("  parent is null at "+path);
+         }
+      }
+      
+      return val;
+   }
+   
+   /**
+    * This method depends on 2 factors:<br>
+    * 1) there is a string property called 'environment', which is a key
+    *    in the environments section.<br>
+    * 2) there is a nested props property called 'environments'<br>
+    *
+    * If these are true, the properties defined in the indicated environment
+    * section are 'promoted' to top level properties.  Otherwise this does
+    * nothing.
+    */
+   public String promoteEnvironment() {
+      String filename = "";
+      if (sourceFile != null)
+         filename = sourceFile.getName();
+
+      String environment = getProperty("environment");
+
+      Boolean promoted = (Boolean) environsPromoted.get(environment);
+      if (promoted != null)
+         return environment;
+      else
+         environsPromoted.put(environment, new Boolean(true));
+
+      EProperties environments = getProperties("environments");
+      if (environment != null && environments != null) {
+
+         EProperties env = environments.getProperties(environment);
+         if (env == null)
+            log.log(FINE, filename + ": Environment '" + environment
+                  + "' is not defined in " + "environments. Promotion failed.");
+         else {
+            merge(env);
+         }
+      } else {
+         log.log(FINE, filename + ": No environment or environments defined.");
+      }
+      return environment;
+   }
+
+   /**
+    * This method depends on 2 factors:<br>
+    * 1) there is a string propery called 'environment', which is a key
+    *    in the environments section.<br>
+    * 2) there is a nested props property called 'environments'<br>
+    *
+    * If these are true, the properties defined in the indicated environment
+    * section are 'promoted' to top level properties.  Otherwise this does
+    * nothing.
+    */
+   public String promoteEnvironment(String environment) {
+      String filename = "";
+      if (sourceFile != null)
+         filename = sourceFile.getName();
+
+      Boolean promoted = (Boolean) environsPromoted.get(environment);
+      if (promoted != null)
+         return environment;
+      else
+         environsPromoted.put(environment, new Boolean(true));
+
+      EProperties environments = getProperties("environments");
+      if (environment != null && environments != null) {
+
+         EProperties env = environments.getProperties(environment);
+         if (env == null)
+            log.log(FINE, filename + ": Environment '" + environment
+                  + "' is not defined in " + "environments. Promotion failed.");
+         else {
+            log.log(FINE, filename + ": Promoting environment '" + environment
+                  + "'");
+            merge(env);
+         }
+      } else {
+         //(new Exception()).printStackTrace();
+         // System.out.println("environsPromoted: "+environsPromoted);
+
+         log.log(FINE, filename + ": No environment or environments defined.");
+      }
+      return environment;
+   }
+
+   /**
+    *
+    */
+   public Properties toJavaUtilProperties() {
+      Properties props = new Properties();
+
+      for (int i = 0; i < this.size(); i++) {
+         Key key = this.getKey(i);
+         Object val = this.get(key);
+
+         props.put(key.toString(), val);
+      }
+      return props;
+   }
+
+      
+   public void save(String f) 
+      throws IOException {
+      save(new FileOutputStream(new File(f)), null);
+   }
+
+   /** Override and throw exception so people don't use this function.*/
+   public void save(OutputStream os, String header) {
+      try {
+         if (header != null)
+            os.write((header+"\n").getBytes());
+         saveOnStream(os);
+      } catch (Exception ex) {
+         throw new RuntimeException("Error saving properties.", ex);
+      }
+      //throw new RuntimeException("Save with the saveOnStream()");
+   }
+
+   /** */
+   public void saveOnStream(OutputStream os) throws IOException {
+      saveOnStream(os, null);
+   }
+
+   public void saveOnStream(OutputStream os, String header) 
+      throws IOException {
+      saveOnStream(os, header, 0);
+   }
+   
+   /**
+    *
+    */
+   public void saveOnStream(OutputStream os, String header, int depth) 
+      throws IOException {
+      // PropertyWriter pw=new PropertyWriter(os, true);
+
+      //PropertyOutputStream pw = new PropertyOutputStream(os);
+      PropertyWriter pw=new PropertyWriter(os, depth);
+
+      if (header != null)
+         pw.println(header);
+
+      int size = this.size();
+      for (int i = 0; i < size; i++) {
+         Key key = getKey(i);
+         Object value = get(key);
+         
+         if (!key.isTransient()) {
+            if (value instanceof String) {
+               String val = addEscapeChars(value.toString());
+               pw.println(key.keyString() + " = \"" + val + "\"");
+            } else if (value instanceof List) {
+               List<String> v = (List<String>) value;
+               int keySize = key.key.length();
+               String spacer = "";
+               for (int j = 0; j < keySize + 4; j++)
+                  spacer = spacer + " ";
+   
+               int vsize = v.size();
+               if (vsize == 0) {
+                  // Zero element vector
+                  String line = key.keyString() + " = (  )";
+                  pw.println(line);
+               } else {
+                  for (int j = 0; j < vsize; j++) {
+                     String val = (String) v.get(j);
+                     val = addEscapeChars(val);
+                     String line = null;
+   
+                     if (vsize == 1)
+                        line = key.keyString() + " = (\"" + val + "\")";
+                     else if (j == 0)
+                        line = key.keyString() + " = (\"" + val + "\"";
+                     else if (j == vsize - 1)
+                        line = spacer + "\"" + val + "\")";
+                     else
+                        line = spacer + "\"" + val + "\"";
+   
+                     // this code was added 9/4/01.  It was an oversight.  
+                     // After looking at the readVectorVal method, the a vector
+                     // is really defined as a set of " delimited strings.  
+                     // _ANY_ chars between the quotes should be ignored.  So
+                     // adding the commas here is really for human readability.
+                     if (j < vsize - 1)
+                        line = line + ", ";
+   
+                     pw.println(line);
+                  }
+               }
+            } else if (value instanceof EProperties) {
+               EProperties eprops = (EProperties) value;
+               if (eprops.sourceFile == null) {
+                  pw.println(key.keyString() + " = ");
+                  pw.println("{");
+                  // recursion!
+                  eprops.saveOnStream(os, null, depth+1);
+                  pw.println("}");
+               } else {
+                  pw.println(key.keyString() + " = ["
+                        + eprops.sourceFile.getAbsolutePath() + "]");
+                  try {
+                     eprops.save(); // Let it save itself
+                  } catch (Exception ex) {
+                     throw new IOException("Unable to save included props for key " + 
+                           key + " to " + eprops.sourceFile.getAbsolutePath());
+                  }
+               }
+            }
+         }
+         // add a single empty line after each value, for human
+         // readability.  It is ignorable whitespace at parse time.
+         pw.println("");
+      } // end for loop over keys
+
+      // Done writing this EProps
+      pw.close();
+   }
+
+   /** */
+   private String addEscapeChars(String s) {
+      StringBuffer outval = new StringBuffer();
+      char chars[] = s.toCharArray();
+      for (int i = 0; i < chars.length; i++) {
+         if (isEscapeChar((int) chars[i]))
+            outval.append("\\");
+
+         outval.append(chars[i]);
+      }
+      return outval.toString();
+   }
+
+   /** */
+   private final boolean isEscapeChar(int val) {
+      for (int i = 0; i < escapeChars.length; i++) {
+         if ((char) val == escapeChars[i])
+            return true;
+      }
+      return false;
+   }
+
+   /**
+    *
+    */
+   public void save() throws IOException {
+      if (sourceFile != null) {
+         backup(sourceFile); // Save a backup copy.
+         if (debug)
+            System.out.println("Saveing to " + sourceFile.getAbsolutePath());
+         FileOutputStream fos = null;
+         try {
+            fos = new FileOutputStream(sourceFile);
+            saveOnStream(fos, null);
+         } finally {
+            if (fos != null) {
+               fos.flush();
+               fos.close();
+            }
+         }
+      } else {
+         // Walk up the stack, find the parent, and save it.
+         if (parent != null)
+            parent.save();
+         else
+            throw new IOException("Cannot save, no source file has "
+                  + "been set.");
+      }
+   }
+
+   /** */
+   public void save(File f) throws IOException {
+      FileOutputStream fos = null;
+      try {
+         fos = new FileOutputStream(f);
+         saveOnStream(fos);
+      } finally {
+         if (fos != null)
+            fos.close();
+      }
+   }
+
+   /**
+    *
+    */
+   private void backup(File file) {
+      if (file.exists() && !file.isDirectory()) {
+         file.renameTo(new File(file.getAbsolutePath() + ".backup"));
+      }
+   }
+
+   /**
+    * Prints this property list out to the specified output stream. 
+    * This method is useful for debugging. 
+    *
+    * @param   out   an output stream.
+    * @since   JDK1.0
+    */
+   public void list(PrintStream out) {
+      out.println("-- listing properties --");
+      //Hashtable h = new Hashtable();
+      //enumerate(h);
+//      for (Enumeration e = keys(); e.hasMoreElements();) {
+//         Key key = (Key) e.nextElement();
+//         Object val = get(key);
+//
+//         out.println(key.key + "=" + val.toString());
+//      }
+     // out.println("-- end list --");
+      for (int i = 0; i < size(); i++) {
+         Key k = getKey(i);
+         Object val = get(k);
+         if (k == null)
+            out.println("key(" + i + ") is null.");
+         else if (val == null)
+            out.println("val for key " + k + " is null");
+         else
+            out.println(k.key + "=" + val.toString());
+      }
+      out.println("-- end list --");
+   }
+
+   /**
+    * Merges one set of properties into another.  The equivalent of an "ADD" 
+    * function.  <p>
+    *
+    * If a property was defined, it will be overwritten.
+    * 
+    * @param p The properties to be merged into the current object.
+    */
+   public void merge(EProperties p) {
+      List<Key> keys = p.getKeys();
+      int size=keys.size();
+      for (int i = 0; i < size; i++) {
+         Object key = keys.get(i);
+         Object val = p.get(key);
+
+         this.put(key, val);
+      }
+   }
+
+   /** 
+    * 
+    */
+   public String asString() throws IOException {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      saveOnStream(baos, null);
+      return baos.toString();
+   }
+
+   /** */
+   public void fromString(String s) throws IOException {
+      StringBufferInputStream sbis = new StringBufferInputStream(s);
+      load(sbis);
+   }
+   
+   /**
+    * 
+    */
+   private class PropertyWriter {
+      int depth=0; 
+      Writer writer=null;
+      String indent="";
+      
+      public PropertyWriter(Writer w) {
+         this (w, 0);
+      }
+      
+      public PropertyWriter(Writer w, int d) {
+         writer=w;
+         depth=d;
+         
+         if (debug)
+            System.out.println ("Constructing property writer depth="+depth);
+         
+         StringBuilder sb=new StringBuilder();
+         for (int i=0; i<(3*depth); i++) {
+            sb.append(" ");
+         }
+         indent=sb.toString();
+      }
+      
+      public PropertyWriter(OutputStream os) {
+         this(new OutputStreamWriter(os));
+      }
+      
+      public PropertyWriter(OutputStream os, int d) {
+         this(new OutputStreamWriter(os), d);
+      }
+      
+      public void println(String s) 
+         throws IOException {
+         
+         if (debug && false)
+            System.out.println ("Raw line is: \n"+
+                  "'"+s+"'");
+         
+         //if (s.trim().equals(""))
+         //   return;
+         
+         if (s.endsWith(("\n"))) 
+            s=s.substring(0, s.length()-1); // we will add this back later!
+         
+         // s could be multiple lines...
+         s=s.replace("\n", "\n"+indent);
+         
+         s=indent+s+"\n";
+         
+         if (debug && false)
+            System.out.println ("Writing \n"+
+                  "'"+s+"'");
+         writer.write(s);
+         writer.flush();
+      }
+      
+      public void close() throws IOException {
+         if (debug)
+            System.out.println ("Closing writer, depth="+depth);
+         if (depth == 0) {
+            if (debug)
+               System.out.println ("really closing...");
+            writer.close();
+         }
+      }
+   }
+
+   static final String USAGE = "EProperties <filename>";
+
+   /**
+    *
+    */
+   public static void main(String args[]) {
+      debug = true;
+
+      String filename = args[0];
+
+      System.out.println("EProperties test.  Loading from " + filename);
+      
+      EProperties.debug=true;
+
+      if (filename == null) {
+         System.out.println(USAGE);
+         System.exit(1);
+      }
+
+      try {
+         EProperties eprops = new EProperties();
+
+         eprops.load(filename);
+
+         eprops.list(System.out);
+
+         //eprops.setSourceFile(new File("test.out.properties"));
+         //eprops.save();
+      } catch (Exception ex) {
+         ex.printStackTrace();
+      }
+   }
+
+   /**
+    *
+    */
+   public void addListener(PropertyListener obs) {
+      //log.writeDebug ("Adding observer "+obs.getClass().getName()+" to "+this);
+      if (listeners == null)
+         listeners = new ArrayList<PropertyListener>();
+      listeners.remove(obs); // prevent duplicates
+      listeners.add(obs);
+   }
+
+   /**
+    *
+    */
+   public void removeListener(PropertyListener obs) {
+      if (listeners != null)
+         listeners.remove(obs);
+   }
+
+   /** */
+   void notifyListeners(Key key, Object value) {
+      if (listeners == null)
+         return;
+
+      // generate the event
+      PropertyChangeEvent evt = new PropertyChangeEvent(key, value);
+
+      for (int i = 0; i < listeners.size(); i++) {
+         PropertyListener obs = listeners.get(i);
+         obs.propertyChange(evt);
+      }
+   }
+}
