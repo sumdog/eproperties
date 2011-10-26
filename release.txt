@@ -6,7 +6,15 @@ Contact: Paul Bemowski, bemowski@yahoo.com
 
 ===============================================================================
 
-1.1.1 
+1.1.2 Released Oct 26, 2011
+  - fixed Google issue 9, substitutions not working properly with root includes.
+    This was caused because the *Value classes (including ListValue, StringValue
+    and EProperties) hold a reference to the owning properties object.  When we
+    were doing deepMerge we were not re-setting the "owning" properties object, 
+    so later substitutions were referencing "dead" properties.
+    Added Value.setOwner(), and implemented in concrete classes.
+
+1.1.1 Released 14 Apr 2011 
   - Fixed list(), not printing key on lists.
   - Google Issue 2: Added boolean to disable validation on load.
   - Added automated publish stuff.

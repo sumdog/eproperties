@@ -28,4 +28,9 @@ public class StringValue implements Value<String> {
       // perform dynamic substitution.
       return SubstitutionProcessor.processSubstitution(persistentValue, owner, Object.class);
    }
+
+   @Override
+   public void setOwner(EProperties p) {
+      owner=p;
+   }
 }

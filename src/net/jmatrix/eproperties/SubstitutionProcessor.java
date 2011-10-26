@@ -85,6 +85,8 @@ public final class SubstitutionProcessor {
    /** */
    private static final Object processSubstitution(String s, EProperties p, 
                                                    Class returnType, int iter) {
+      log.debug("processSubstitution('"+s+"', to return "+returnType+")");
+      
       if (returnType == null)
          returnType=Object.class;
       
