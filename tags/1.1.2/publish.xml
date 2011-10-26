@@ -1,0 +1,56 @@
+<project name="eproperties-publish" default="" basedir=".">
+   
+   <!--  -->
+   <target name="publish-init">
+       <property file="publish.properties"/>
+       
+       <taskdef classname="net.bluecow.googlecode.ant.GoogleCodeUploadTask" 
+                classpath="build.tools/ant-googlecode-0.0.2.jar" 
+                name="gcupload"/>
+   </target>
+   
+   <!--  -->
+   <target name="publish" depends="publish-init,dist">
+      <gcupload 
+        verbose="true"
+        username="${svn.username}" 
+        password="${svn.pass}" 
+        projectname="eproperties" 
+        filename="dist/eproperties-${version}.jar" 
+        targetfilename="eproperties-${version}.jar"
+        summary="EProperties jar file. (Requires commons-logging available in the classpath)"
+        labels="Featured, Type-Archive, OpSys-All" />
+        
+      <gcupload 
+        verbose="true"
+        username="${svn.username}" 
+        password="${svn.pass}" 
+        projectname="eproperties" 
+        filename="dist/eproperties_deps-${version}.jar" 
+        targetfilename="eproperties_deps-${version}.jar"
+        summary="jar file, with commons-logging embedded."
+        labels="Type-Archive, OpSys-All" />
+
+      <gcupload 
+        verbose="true"
+        username="${svn.username}" 
+        password="${svn.pass}" 
+        projectname="eproperties" 
+        filename="dist/eproperties-${version}.tar.gz" 
+        targetfilename="eproperties-${version}.tar.gz"
+        summary="Tarball with everything - code, docs, jars."
+        labels="Featured, Type-Package, OpSys-All" />
+        
+      <gcupload 
+        verbose="true"
+        username="${svn.username}" 
+        password="${svn.pass}" 
+        projectname="eproperties" 
+        filename="dist/eproperties-${version}.zip" 
+        targetfilename="eproperties-${version}.zip"
+        summary="Zip file with everything - code, docs, jars."
+        labels="Type-Package, OpSys-All" />
+   </target>
+   
+   <target name="dist"/>
+</project>

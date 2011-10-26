@@ -1,0 +1,17 @@
+#!/bin/bash
+
+
+BINDIR=`dirname $0`
+
+. $BINDIR/../version.properties
+
+echo "EProperties version=${version}"
+
+JAR_DIR=$BINDIR/../
+
+export LOCALCLASSPATH=$JAR_DIR/eproperties_deps-${version}.jar
+
+echo CP: $LOCALCLASSPATH
+
+java $JAVA_OPTIONS -cp $LOCALCLASSPATH $*
+
