@@ -4,7 +4,8 @@ import java.io.File;
 import java.net.URL;
 import java.util.logging.*;
 
-import net.jmatrix.eproperties.EProperties;
+import net.jmatrix.eproperties.*;
+import net.jmatrix.eproperties.parser.EPropertiesParser;
 import net.jmatrix.eproperties.utils.JDK14LogConfig;
 
 import org.apache.commons.logging.*;
@@ -32,12 +33,19 @@ public class EPropertiesCLI {
       }
       
       if (ap.getBooleanArg("-debug")) {
+         EProperties.debug=true;
          System.out.println ("Setting root logger to debug.");
          Logger logger=Logger.getLogger("");
-         logger.setLevel(Level.FINEST);
+         logger.setLevel(Level.ALL);
          
          logger=Logger.getLogger(EProperties.class.getName());
          logger.setLevel(Level.FINE);
+         
+         logger=Logger.getLogger(SubstitutionProcessor.class.getName());
+         logger.setLevel(Level.INFO);
+         
+         logger=Logger.getLogger(EPropertiesParser.class.getName());
+         logger.setLevel(Level.ALL);
       } else {
          Logger logger=Logger.getLogger("");
          logger.setLevel(Level.INFO);
@@ -56,8 +64,23 @@ public class EPropertiesCLI {
       
       EProperties props=new EProperties();
       
+      System.out.println ("\n********************  BEGIN LOAD  *******************");
       props.load(url);
+      System.out.println ("********************   END LOAD  *******************\n");
       
+      
+      
+      
+      System.out.println ("size: "+props.size());
+      System.out.println ("keys: "+props.getKeys().size());
+      
+//      System.out.println ("override_sub="+props.getString("OVERRIDE_SUB"));
+//      System.out.println();
+//      
+//      System.out.println ("find override_sub="+props.findProperty("OVERRIDE_SUB"));
+//      System.out.println();
+//      
+//      System.out.println ("override="+props.getString("OVERRIDE"));
       
       System.out.println ("---- listing ----");
       if (ap.getBooleanArg("-flatten", false))
@@ -65,5 +88,7 @@ public class EPropertiesCLI {
       else
          props.list(System.out);
       System.out.println ("---- end listing ----");
+      
+      props.superList();
    }
 }

@@ -152,6 +152,10 @@ public class EProperties extends Properties implements Value<EProperties> {
       includeURL=iurl;
    }
    
+   public void setOwner(EProperties p) {
+      this.parent=p;
+   }
+   
    /** 
     * Merges 2 property sets at the same level.  Any potentially duplicate
     * keys would be overwritten by the new values.
@@ -176,6 +180,9 @@ public class EProperties extends Properties implements Value<EProperties> {
          
          //Object val = p.get(key); 
          Object val=p.preSubstitutionGet(key);
+         
+         if (val instanceof Value)
+            ((Value)val).setOwner(this);
          
          this.put(key, val);
       }
@@ -203,6 +210,9 @@ public class EProperties extends Properties implements Value<EProperties> {
          
          Object val=p.preSubstitutionGet(keyString);
          
+         log.debug("Deep-Merge: pre-substitution get returns "+
+               (val == null? "null":(val.getClass().getName()+", "+val)));
+         
          if (val instanceof EProperties) {
             EProperties mergingProps=(EProperties)val;
             
@@ -214,6 +224,10 @@ public class EProperties extends Properties implements Value<EProperties> {
                this.put(keyString, val);
             }
          } else {
+            //log.debug("Deep merge, pre-substitution value for key '"+key+"' is "+val);
+            
+            if (val instanceof Value) 
+               ((Value)val).setOwner(this);
             this.put(keyString, val);
          }
       }
@@ -333,6 +347,10 @@ public class EProperties extends Properties implements Value<EProperties> {
          }
       }
       return sb.toString();
+   }
+   
+   public void superList() {
+      super.list(new PrintStream(System.out));
    }
    
    public void list(PrintStream ps) {
@@ -492,6 +510,7 @@ public class EProperties extends Properties implements Value<EProperties> {
       
       Object returnVal=v;
       Value value=null;
+      
       if (v == null) {
          // Allowing us to call put(key, null). Setting a property to 
          // null is defined as removing that property.
@@ -511,6 +530,10 @@ public class EProperties extends Properties implements Value<EProperties> {
          ((EProperties)v).setParent(this, key.toString());
       } else if (v instanceof StringValue ||
                  v instanceof ListValue) {
+         Value vv=(Value)v;
+         
+         log.debug("Putting raw StringValue or ListValue: persistent: "+
+               vv.getPersistentValue()+" runtime: "+vv.getRuntimeValue());
          super.put(key, v);
       } else {
          throw new Error("EProperties put() values can only be: "+
@@ -647,6 +670,18 @@ public class EProperties extends Properties implements Value<EProperties> {
          if (val != null)
             keyHit(key);
       }
+      if (debug)
+         System.out.println ("get, key: '"+key+"', keyclass: "+key.getClass().getName());
+      
+      if (debug) {
+         System.out.println ("get, val: '"+val+"' valClass: "+(val == null?"":val.getClass().getName()));
+         if (val instanceof Value) {
+            Value vv=(Value)val;
+            System.out.println("   Value.getPersistent: '"+vv.getPersistentValue()+"'");
+            
+            System.out.println("   Value.getRuntime   : '"+vv.getRuntimeValue()+"'");
+         }
+      }
       
       // At this point, val could be null.  
       //System.out.println ("val: "+val);
@@ -681,6 +716,7 @@ public class EProperties extends Properties implements Value<EProperties> {
    }
    
    private Object preSubstitutionGet(Object key) {
+      log.debug("Pre-sub get "+key);
       return super.get(key);
    }
    
@@ -897,8 +933,9 @@ public class EProperties extends Properties implements Value<EProperties> {
    }
 
    ///////////////////////// Load/Save Methods ////////////////////////////
-   /** This is the 'master' load() method.  All other load methods delgate
+   /** This is the 'master' load() method.  All other load methods delegate
     * here for actual property loading.  */
+   @Override
    public synchronized void load(InputStream is) 
    throws IOException {
       InputStream cis=cacheManager.getInputStream(is, sourceURL);
@@ -925,6 +962,11 @@ public class EProperties extends Properties implements Value<EProperties> {
       if (validateOnLoad)
          validate();
    }
+   
+//   @Override
+//   public synchronized void load(Reader r) {
+//      throw new RuntimeException("not implemented.");
+//   }
    
    /**
     * Loads properties with a string representing either a URL or 

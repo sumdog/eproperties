@@ -36,4 +36,5 @@ public interface Value<T> {
    // Value - concept and implementations coded 26 Nov 2008, B757 ATL-SEA
    public T getPersistentValue();
    public Object getRuntimeValue();
+   public void setOwner(EProperties p);
 }

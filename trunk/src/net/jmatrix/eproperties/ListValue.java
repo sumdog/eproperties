@@ -39,4 +39,9 @@ public class ListValue implements Value<List<String>> {
       
       return newList;
    }
+
+   @Override
+   public void setOwner(EProperties p) {
+      owner=p;
+   }
 }

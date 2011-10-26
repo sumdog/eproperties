@@ -1,0 +1,20 @@
+#!/bin/bash
+
+
+BINDIR=`dirname $0`
+
+. $BINDIR/../version.properties
+
+echo "EProperties version=${version}"
+
+JAR_DIR=$BINDIR/..
+
+LOCALCLASSPATH=$JAR_DIR/eproperties_deps-${version}.jar
+
+LOCALCLASSPATH=$LOCALCLASSPATH:$BINDIR/../test-classes/:$BINDIR/../../junit/junit-4.5.jar
+
+export LOCALCLASSPATH
+
+echo CP: $LOCALCLASSPATH
+
+java $JAVA_OPTIONS -cp $LOCALCLASSPATH test.Driver $*

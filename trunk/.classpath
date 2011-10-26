@@ -5,8 +5,8 @@
 	<classpathentry kind="src" path="build/gen"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="jars/commons-logging.jar"/>
-	<classpathentry kind="lib" path="junit/junit-4.4.jar"/>
 	<classpathentry kind="lib" path="jars/testproperties.jar"/>
 	<classpathentry kind="lib" path="build/classes"/>
+	<classpathentry kind="lib" path="junit/junit-4.5.jar"/>
 	<classpathentry kind="output" path="eclipse_classes"/>
 </classpath>

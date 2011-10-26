@@ -5,7 +5,7 @@
    <target name="all" depends="init,assemble" />
 
    <!-- Full build, deletes everything, and builds everything. -->
-   <target name="full" depends="init,clean" />
+   <target name="full" depends="dist" />
 
    <property file="version.properties"/>
 
@@ -127,7 +127,7 @@
     </target>
     
     <!-- Assemble creates the deployable artifacts, like jars, wars, zips -->
-    <target name="assemble" depends="compile">
+    <target name="assemble" depends="compile-tests">
         <copy todir="build/config">
            <fileset dir="config" includes="**"/>
         </copy>

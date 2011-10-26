@@ -269,7 +269,7 @@ EProperties eproperties(EProperties p, EProperties par) :
            if (includeResult != null) {
               
               if (includeResult instanceof EProperties) {
-                 log.debug("Merging root include w/ parent properties.");
+                 log.debug("Merging root include "+tok.image+" w/ parent properties.");
                  //p.merge((EProperties)includeResult);
                  p.deepMerge((EProperties)includeResult);
               } else {

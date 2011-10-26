@@ -29,7 +29,7 @@ public class JDK14LogConfig {
       
       ConsoleHandler consoleHandler=new ConsoleHandler();
       consoleHandler.setFormatter(new LocalLogFormatter());
-      consoleHandler.setLevel(Level.FINE);
+      consoleHandler.setLevel(Level.FINEST);
       logger.addHandler(consoleHandler);
       
       logger.setLevel(Level.ALL);
