@@ -265,7 +265,14 @@ public class EProperties extends Properties implements Value<EProperties> {
       EProperties flat=new EProperties();
       for (Key key:keys) {
          Object val=get(key);
-         if (val instanceof EProperties) {
+         
+         if (val == null) {
+            log.warn("flatten: value is null for key "+key);
+            if (!empty(prefix))
+               flat.put(prefix+delim+key, val);
+            else 
+               flat.put(key.toString(), val);
+         } else if (val instanceof EProperties) {
             EProperties epval=(EProperties)val;
             // recursion
             EProperties nestedFlat=null;
