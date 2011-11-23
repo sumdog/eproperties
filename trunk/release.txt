@@ -6,6 +6,9 @@ Contact: Paul Bemowski, bemowski@yahoo.com
 
 ===============================================================================
 
+1.1.3
+  - Fixed Null Pointer in flatten().
+
 1.1.2 Released Oct 26, 2011
   - fixed Google issue 9, substitutions not working properly with root includes.
     This was caused because the *Value classes (including ListValue, StringValue

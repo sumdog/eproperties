@@ -69,8 +69,6 @@ public class EPropertiesCLI {
       System.out.println ("********************   END LOAD  *******************\n");
       
       
-      
-      
       System.out.println ("size: "+props.size());
       System.out.println ("keys: "+props.getKeys().size());
       
