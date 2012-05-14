@@ -91,11 +91,15 @@ public class EProperties extends Properties implements Value<EProperties> {
     * */
    long lastModification=-1;
    
-   /**
-    * Static initializer.  This simply prints some version and 
-    * marketing info on the bootstrap of EProperties.
-    */
-   static {
+   public static boolean showVersion=true;
+   private static volatile boolean versionShown=false;
+   
+   static synchronized final void showVersion() {
+      if (versionShown)
+         return;
+      
+      versionShown=true;
+      
       InputStream is=null;
       Properties p=null;
       try {
@@ -136,16 +140,64 @@ public class EProperties extends Properties implements Value<EProperties> {
       System.out.println (message);
    }
    
+   /**
+    * Static initializer.  This simply prints some version and 
+    * marketing info on the bootstrap of EProperties.
+    */
+   static {
+//      InputStream is=null;
+//      Properties p=null;
+//      try {
+//         is=EProperties.class.getResourceAsStream("version.properties");
+//         if (is != null) {
+//            p=new Properties();
+//            p.load(is);
+//         }
+//      } catch (Throwable t) {
+//         t.printStackTrace();
+//      } finally {
+//         if (is != null)
+//            try {is.close();} catch (Exception ex) {}
+//      }
+//      StringBuilder message=new StringBuilder();
+//      String version="UNKNOWN";
+//      if (p != null)
+//         version=p.getProperty("version");
+//      if (version == null)
+//         version="ERROR";
+//      //System.out.println ("version: "+version+" length: "+version.length());;
+//      int dlen=14;
+//      if (version.length() > dlen)
+//         version=version.substring(0,dlen);
+//      else if (version.length() < dlen) {
+//         int add=dlen-version.length();
+//         for (int i=0; i<add; i++)
+//            version=version+" ";
+//      }
+//      //System.out.println ("version: '"+version+"' version.length="+version.length());
+//      
+//      message.append("+-----------------------------------------------------------+\n");
+//      message.append("|         Loading EProperties version "+version   +"        |\n");
+//      message.append("| For more info, see the EProperties project on googlecode. |\n");
+//      message.append("|         http://code.google.com/p/eproperties/             |\n");
+//      message.append("+-----------------------------------------------------------+\n");
+//
+//      System.out.println (message);
+   }
+   
    
    /** Constructs a sub-properties object, the parent collection is passed
     * into the constructor. */
    public EProperties(EProperties par) {
+      this();
       parent=par;
    }
    
    /** Empty constructor.  Most commonly used as a public API, with 
     * a load() operation called soon after.  */
-   public EProperties() {}
+   public EProperties() {
+      showVersion();
+   }
    
    /** Sets the URL from which this file was included. */
    public void setIncludedURL(String iurl) {
