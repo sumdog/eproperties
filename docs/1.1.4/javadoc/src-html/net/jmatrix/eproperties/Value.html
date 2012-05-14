@@ -1,0 +1,106 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    package net.jmatrix.eproperties;<a name="line.1"></a>
+<FONT color="green">002</FONT>    <a name="line.2"></a>
+<FONT color="green">003</FONT>    /** <a name="line.3"></a>
+<FONT color="green">004</FONT>     * This interface is used internally, to return the representation of the <a name="line.4"></a>
+<FONT color="green">005</FONT>     * object that should be saved, not the runtime value.  The difference<a name="line.5"></a>
+<FONT color="green">006</FONT>     * between runtime value and persistence value is exactly substitutions.<a name="line.6"></a>
+<FONT color="green">007</FONT>     *<a name="line.7"></a>
+<FONT color="green">008</FONT>     * This concept is best shown by example. Consider the following <a name="line.8"></a>
+<FONT color="green">009</FONT>     * properties file:<a name="line.9"></a>
+<FONT color="green">010</FONT>     * &lt;pre&gt;<a name="line.10"></a>
+<FONT color="green">011</FONT>     * foo="world"<a name="line.11"></a>
+<FONT color="green">012</FONT>     * bar="hello ${foo}"<a name="line.12"></a>
+<FONT color="green">013</FONT>     * &lt;/pre&gt;<a name="line.13"></a>
+<FONT color="green">014</FONT>     * <a name="line.14"></a>
+<FONT color="green">015</FONT>     * Here we have 2 keys, and 2 values. The runtime and persistent values<a name="line.15"></a>
+<FONT color="green">016</FONT>     * represented by the key "foo" are identical.  This is not the case for<a name="line.16"></a>
+<FONT color="green">017</FONT>     * bar.  For bar, the following values are represented:<a name="line.17"></a>
+<FONT color="green">018</FONT>     * <a name="line.18"></a>
+<FONT color="green">019</FONT>     * bar runtime value    = hello world<a name="line.19"></a>
+<FONT color="green">020</FONT>     * bar persistent value = hello ${foo}<a name="line.20"></a>
+<FONT color="green">021</FONT>     * <a name="line.21"></a>
+<FONT color="green">022</FONT>     * We should never persist the runtime value.  &lt;p&gt;<a name="line.22"></a>
+<FONT color="green">023</FONT>     * <a name="line.23"></a>
+<FONT color="green">024</FONT>     * Further, internally, the key bar must listen to the key foo for changes.<a name="line.24"></a>
+<FONT color="green">025</FONT>     * Substitutions can be done dynamically, however we also need to listen<a name="line.25"></a>
+<FONT color="green">026</FONT>     * to foo because others may be listening to us.  Ie, if I declare myself<a name="line.26"></a>
+<FONT color="green">027</FONT>     * to be a listener of the key "bar", and someone changes the value of<a name="line.27"></a>
+<FONT color="green">028</FONT>     * "foo" then I need to be notified that my runtime value has also changed.<a name="line.28"></a>
+<FONT color="green">029</FONT>     * <a name="line.29"></a>
+<FONT color="green">030</FONT>     * Substitutions could be done dynamically (as in when getRuntimeValue() is <a name="line.30"></a>
+<FONT color="green">031</FONT>     * called), or could be done statically - and listen for updates up the <a name="line.31"></a>
+<FONT color="green">032</FONT>     * tree. Either mechanism may be used, however changes to "foo" must be<a name="line.32"></a>
+<FONT color="green">033</FONT>     * immediately reflected in "bar".  <a name="line.33"></a>
+<FONT color="green">034</FONT>     */<a name="line.34"></a>
+<FONT color="green">035</FONT>    public interface Value&lt;T&gt; {<a name="line.35"></a>
+<FONT color="green">036</FONT>       // Value - concept and implementations coded 26 Nov 2008, B757 ATL-SEA<a name="line.36"></a>
+<FONT color="green">037</FONT>       public T getPersistentValue();<a name="line.37"></a>
+<FONT color="green">038</FONT>       public Object getRuntimeValue();<a name="line.38"></a>
+<FONT color="green">039</FONT>       public void setOwner(EProperties p);<a name="line.39"></a>
+<FONT color="green">040</FONT>    }<a name="line.40"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>
