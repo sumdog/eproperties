@@ -6,6 +6,10 @@ Contact: Paul Bemowski, bemowski@yahoo.com
 
 ===============================================================================
 
+1.1.4
+  - Removed the show version stuff if the user optionally calls EProperties.showVersion=false
+    before constructing the first EProperties object.
+
 1.1.3
   - Fixed Null Pointer in flatten().
 
