@@ -1,0 +1,21 @@
+
+
+1) Commit all code to svn, make sure version.proeprties is 
+   the version you want to publish, and release.txt has the updates
+   for the current release.
+
+1.5) Tag in svn
+  svn cp .../trunk .../tags/${version}
+
+2) Publish archives with 'ant clean publish'
+
+3) Publish documentation with ./publish.doc.sh
+
+4) Go into googlecode web site
+   a) Go go downloads and delete/deprecate older versions.
+   b) Update wiki to point to current version javadoc and release.txt
+   c) Update issues that were fixed with the version number in which they 
+      were fixed.
+
+Post-Publish
+5) Locally, update version.properties to the next version.
