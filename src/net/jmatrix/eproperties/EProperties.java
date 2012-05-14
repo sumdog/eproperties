@@ -95,6 +95,9 @@ public class EProperties extends Properties implements Value<EProperties> {
    private static volatile boolean versionShown=false;
    
    static synchronized final void showVersion() {
+      if (showVersion == false)
+         return;
+      
       if (versionShown)
          return;
       
