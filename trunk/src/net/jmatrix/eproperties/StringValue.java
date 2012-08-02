@@ -14,7 +14,12 @@ public class StringValue implements Value<String> {
    }
    
    public String toString() {
-      return getRuntimeValue().toString();
+      Object runtimeValue = getRuntimeValue();
+      if (runtimeValue != null)
+      {
+         return runtimeValue.toString();
+      }
+      return null;
    }
    
    public String getPersistentValue() {
