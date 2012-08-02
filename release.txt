@@ -6,6 +6,9 @@ Contact: Paul Bemowski, bemowski@yahoo.com
 
 ===============================================================================
 
+1.1.6 
+  - Fred's fix on StringValue.java to avoid NPE
+
 1.1.5
   - Removed the show version stuff if the user optionally calls EProperties.showVersion=false
     before constructing the first EProperties object.
