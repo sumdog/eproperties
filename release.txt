@@ -6,6 +6,11 @@ Contact: Paul Bemowski, bemowski@yahoo.com
 
 ===============================================================================
 
+1.1.7
+  - removed an extraneous props.superList() at the end of CLI.  Using CLI and
+    exit codes at build time to validate complex properties.
+    
+    
 1.1.6 
   - Fred's fix on StringValue.java to avoid NPE
 

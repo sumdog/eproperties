@@ -87,6 +87,6 @@ public class EPropertiesCLI {
          props.list(System.out);
       System.out.println ("---- end listing ----");
       
-      props.superList();
+      //props.superList();
    }
 }
