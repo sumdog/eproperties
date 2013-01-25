@@ -68,6 +68,8 @@ public final class SubstitutionProcessor {
    /** */
    public static final Object processSubstitution(String s, EProperties p, 
                                                   Class returnType) {
+      if (s == null || s.length() == 0)
+         return s;
       return processSubstitution(s, p, returnType, 0);
    }
    
