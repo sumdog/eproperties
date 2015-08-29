@@ -1,0 +1,18 @@
+plugins {
+  id "ca.coglinc.javacc" version "2.3.1"
+}
+
+apply plugin: 'java'
+
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile 'commons-logging:commons-logging:1.2'
+
+    testCompile 'junit:junit:4.12'
+}
+
+
