@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    compile 'commons-logging:commons-logging:1.2'
+    compile 'commons-logging:commons-logging:1.2', files('lib/testproperties.jar')
 
     testCompile 'junit:junit:4.12'
 }
