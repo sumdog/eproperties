@@ -7,13 +7,14 @@ import net.jmatrix.eproperties.EProperties;
 import net.jmatrix.eproperties.cache.CacheManager;
 import net.jmatrix.eproperties.utils.*;
 
-import org.apache.commons.logging.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Loads properties from file, http(s), or classpath locations. 
  */
 public class URLPropertiesLoader implements PropertiesLoader {
-   static Log log=LogFactory.getLog(URLPropertiesLoader.class);
+   static Logger log= LoggerFactory.getLogger(URLPropertiesLoader.class);
    static CacheManager cacheManager=CacheManager.getInstance();
    
    /** */
@@ -35,27 +36,11 @@ public class URLPropertiesLoader implements PropertiesLoader {
          EProperties options) {
 
       Object result=null;
-
-      
-      //surl=surl.toLowerCase();
       
       // Translate classpath:// URLs to Java internal URLs.
       surl=URLUtil.convertClasspathURL(surl);
       String lcurl=surl.toLowerCase();
-//      if (surl.startsWith("classpath:/")) {
-//         System.out.println ("Found classpath URL: "+surl);
-//         // First strip off the stuff that I created - 'classpath://'
-//         String resourcepath=surl.substring("classpath:/".length());
-//         System.out.println ("Resource path: "+resourcepath);
-//         URL url=URLPropertiesLoader.class.getResource(resourcepath);
-//         
-//         if (url == null) {
-//            throw new RuntimeException("Cannot find resource in classpath for URL "+surl);
-//         }
-//         System.out.println (surl+" -> "+url.toExternalForm());
-//         surl=url.toExternalForm(); // this will start with either file:// or jar:file:/
-//      }
-//      
+
       if (lcurl.startsWith("http://") || lcurl.startsWith("https://") ||
           lcurl.startsWith("file:/") || lcurl.startsWith("jar:file:/")) {
          log.debug("Loading as absolute URL: "+surl); 
@@ -67,7 +52,6 @@ public class URLPropertiesLoader implements PropertiesLoader {
          if (f.exists()) {
             try {
                result=loadFromURL(f.toURI().toURL().toExternalForm(), options, parent);
-               //props.load(f.toURI().toURL());
             } catch (IOException ex) {
                if (options.getBoolean("failonerror", true)) {
                   throw new 
@@ -134,14 +118,6 @@ public class URLPropertiesLoader implements PropertiesLoader {
             workingSURL=workingSURL.substring(0, workingSURL.lastIndexOf("/")+1)+surl;
             log.debug("Loading w/ rel URL: '"+workingSURL+"'");
             result=loadFromURL(workingSURL, options, parent);
-//            try {
-//               URL url=new URL(workingSURL);
-//               
-//               props.load(url);
-//            } catch (IOException ex) {
-//               throw new 
-//               RuntimeException("Error loading included properties from '"+surl+"'", ex);
-//            }
          }
       }
       

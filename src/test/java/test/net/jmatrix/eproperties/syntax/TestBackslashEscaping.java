@@ -3,7 +3,6 @@ package test.net.jmatrix.eproperties.syntax;
 
 import java.io.*;
 import java.util.Properties;
-import java.util.logging.*;
 
 import net.jmatrix.eproperties.EProperties;
 
@@ -15,13 +14,7 @@ public class TestBackslashEscaping {
    
    @Before
    public void setUp() throws Exception {
-//      System.out.println ("Setting log level to trace for parser.");
-//      
-//      Logger.getLogger("net.jmatrix").setLevel(Level.FINER);
-//      Handler handlers[]=Logger.getLogger("").getHandlers();
-//      for (Handler handler:handlers) {
-//         handler.setLevel(Level.FINEST);
-//      }
+
    }
    
 

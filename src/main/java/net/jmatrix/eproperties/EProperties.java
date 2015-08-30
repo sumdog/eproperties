@@ -8,7 +8,8 @@ import net.jmatrix.eproperties.cache.*;
 import net.jmatrix.eproperties.parser.EPropertiesParser;
 import net.jmatrix.eproperties.utils.URLUtil;
 
-import org.apache.commons.logging.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * EProperties is the root properties object, and the core of the EProperties
@@ -25,7 +26,7 @@ import org.apache.commons.logging.*;
  * operations should be atomic.   
  */
 public class EProperties extends Properties implements Value<EProperties> {
-   public static Log log=LogFactory.getLog(EProperties.class);
+   public static Logger log = LoggerFactory.getLogger(EProperties.class);
    
    /** When set to true, EProperties will emit some debug logging. */
    public static boolean debug=false;
@@ -123,7 +124,6 @@ public class EProperties extends Properties implements Value<EProperties> {
          version=p.getProperty("version");
       if (version == null)
          version="ERROR";
-      //System.out.println ("version: "+version+" length: "+version.length());;
       int dlen=14;
       if (version.length() > dlen)
          version=version.substring(0,dlen);
@@ -132,7 +132,6 @@ public class EProperties extends Properties implements Value<EProperties> {
          for (int i=0; i<add; i++)
             version=version+" ";
       }
-      //System.out.println ("version: '"+version+"' version.length="+version.length());
       
       message.append("+-----------------------------------------------------------+\n");
       message.append("|         Loading EProperties version "+version   +"        |\n");
@@ -140,55 +139,9 @@ public class EProperties extends Properties implements Value<EProperties> {
       message.append("|         http://code.google.com/p/eproperties/             |\n");
       message.append("+-----------------------------------------------------------+\n");
 
-      System.out.println (message);
+      log.info(message.toString());
    }
-   
-   /**
-    * Static initializer.  This simply prints some version and 
-    * marketing info on the bootstrap of EProperties.
-    */
-   static {
-//      InputStream is=null;
-//      Properties p=null;
-//      try {
-//         is=EProperties.class.getResourceAsStream("version.properties");
-//         if (is != null) {
-//            p=new Properties();
-//            p.load(is);
-//         }
-//      } catch (Throwable t) {
-//         t.printStackTrace();
-//      } finally {
-//         if (is != null)
-//            try {is.close();} catch (Exception ex) {}
-//      }
-//      StringBuilder message=new StringBuilder();
-//      String version="UNKNOWN";
-//      if (p != null)
-//         version=p.getProperty("version");
-//      if (version == null)
-//         version="ERROR";
-//      //System.out.println ("version: "+version+" length: "+version.length());;
-//      int dlen=14;
-//      if (version.length() > dlen)
-//         version=version.substring(0,dlen);
-//      else if (version.length() < dlen) {
-//         int add=dlen-version.length();
-//         for (int i=0; i<add; i++)
-//            version=version+" ";
-//      }
-//      //System.out.println ("version: '"+version+"' version.length="+version.length());
-//      
-//      message.append("+-----------------------------------------------------------+\n");
-//      message.append("|         Loading EProperties version "+version   +"        |\n");
-//      message.append("| For more info, see the EProperties project on googlecode. |\n");
-//      message.append("|         http://code.google.com/p/eproperties/             |\n");
-//      message.append("+-----------------------------------------------------------+\n");
-//
-//      System.out.println (message);
-   }
-   
-   
+
    /** Constructs a sub-properties object, the parent collection is passed
     * into the constructor. */
    public EProperties(EProperties par) {
@@ -411,10 +364,6 @@ public class EProperties extends Properties implements Value<EProperties> {
       return sb.toString();
    }
    
-   public void superList() {
-      super.list(new PrintStream(System.out));
-   }
-   
    public void list(PrintStream ps) {
       list((OutputStream)ps);
    }
@@ -503,8 +452,6 @@ public class EProperties extends Properties implements Value<EProperties> {
    public void setParent(EProperties p, String key) {
       parent=p;
       thisKey=key;
-      //System.out.println ("Set parent called with key '"+key+
-      //      "', parent key is '"+p.thisKey+"' path is "+getPath());
    }
    
    /** */
@@ -701,13 +648,9 @@ public class EProperties extends Properties implements Value<EProperties> {
       int index=keys.indexOf(key);
       
       if (index < 0) {
-         //System.out.println ("Can't log hit on "+key);
-         //System.out.println ("keys: "+keys);
-         //System.out.println ("keys.contains?"+keys.contains(key));
       } else {
          Key thekey=keys.get(index);
          thekey.hit();
-         //System.out.println ("Logged hit on key "+thekey);
       }
    }
    
@@ -732,21 +675,16 @@ public class EProperties extends Properties implements Value<EProperties> {
          if (val != null)
             keyHit(key);
       }
-      if (debug)
-         System.out.println ("get, key: '"+key+"', keyclass: "+key.getClass().getName());
-      
-      if (debug) {
-         System.out.println ("get, val: '"+val+"' valClass: "+(val == null?"":val.getClass().getName()));
-         if (val instanceof Value) {
-            Value vv=(Value)val;
-            System.out.println("   Value.getPersistent: '"+vv.getPersistentValue()+"'");
-            
-            System.out.println("   Value.getRuntime   : '"+vv.getRuntimeValue()+"'");
-         }
+
+      log.debug("get, key: '"+key+"', keyclass: "+key.getClass().getName());
+      log.debug ("get, val: '"+val+"' valClass: "+(val == null?"":val.getClass().getName()));
+      if (val instanceof Value) {
+         Value vv=(Value)val;
+         log.debug("   Value.getPersistent: '" + vv.getPersistentValue()+"'");
+         log.debug("   Value.getRuntime   : '"+vv.getRuntimeValue()+"'");
       }
       
-      // At this point, val could be null.  
-      //System.out.println ("val: "+val);
+      // At this point, val could be null.
       if (val == null)
          return val;
       
@@ -1042,14 +980,11 @@ public class EProperties extends Properties implements Value<EProperties> {
       surl=URLUtil.convertClasspathURL(surl);
       
       String lcurl=surl.toLowerCase();
-      
-      //if (surl.indexOf("://") != -1) {
+
       if (lcurl.startsWith("http://") || lcurl.startsWith("https://") ||
           lcurl.startsWith("file:/") || lcurl.startsWith("jar:file:/")) {
-         //System.out.println ("Constructing URL as URL");
          url=new URL(surl);
       } else {
-         //System.out.println ("Constructing URL as File");
          url=(new File(surl)).toURI().toURL();
       }
       load(url);
@@ -1064,12 +999,6 @@ public class EProperties extends Properties implements Value<EProperties> {
          is=cacheManager.getInputStream(url);
          
          load(is);
-         
-//         if (is instanceof CacheInputStream) {
-//            CacheInputStream cis=(CacheInputStream)is;
-//            lastModification=cis.getLastModified();
-//         }
-//         //lastModification=tmp;
          
          lastModification=URLUtil.lastMod(url);
          log.debug("Last Mod is '"+lastModification+"'");
@@ -1090,8 +1019,6 @@ public class EProperties extends Properties implements Value<EProperties> {
          return false;
       
       try {
-         //URLConnection con=sourceURL.openConnection();
-         //URLConnection con=URLUtil.getConnection(surl);
          
          long lastMod=URLUtil.lastMod(surl);
          
@@ -1099,7 +1026,6 @@ public class EProperties extends Properties implements Value<EProperties> {
             return true;
       } catch (Exception ex) {
          log.error("Error checking source modification", ex);
-         //ex.printStackTrace();
       }
       return false;
    }
@@ -1139,7 +1065,7 @@ public class EProperties extends Properties implements Value<EProperties> {
    /** */
    public void setSourceURL(URL url) {
       log.debug("Setting source URL '"+url+"'");
-      sourceURL = url; // new File(file.getAbsolutePath());
+      sourceURL = url;
    }
 
    /** */
@@ -1171,7 +1097,7 @@ public class EProperties extends Properties implements Value<EProperties> {
          if (sourceURL.getProtocol() != null
                && sourceURL.getProtocol().equals("file")) {
 
-            File f = null;
+            File f;
             try {
                f = new File(sourceURL.toURI());
             } catch (Exception ex) {

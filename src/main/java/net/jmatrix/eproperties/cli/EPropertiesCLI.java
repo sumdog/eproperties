@@ -2,52 +2,53 @@ package net.jmatrix.eproperties.cli;
 
 import java.io.File;
 import java.net.URL;
-import java.util.logging.*;
 
 import net.jmatrix.eproperties.*;
 import net.jmatrix.eproperties.parser.EPropertiesParser;
-import net.jmatrix.eproperties.utils.JDK14LogConfig;
 
-import org.apache.commons.logging.*;
+import ch.qos.logback.classic.Logger;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+
 
 /**
  * A simple command line interface to the EProperties system. 
  *
  */
 public class EPropertiesCLI {
-   static Log log=LogFactory.getLog(EPropertiesCLI.class);
+   static Logger log = (Logger)LoggerFactory.getLogger(EPropertiesCLI.class);
    static String usage=
       "EPropertiesCLI [-debug] <Props.URL> \n"+
       "  Props.URL: this is required. It can be a relatve file path or a full http/file URL.";
    
    /** */
    public static void main(String[] args) throws Exception {
-      JDK14LogConfig.startup();
+
       ArgParser ap=new ArgParser(args);
       
       String surl=ap.getLastArg();
       
       if (surl == null) {
-         System.out.println (usage);
+         System.err.println(usage);
          System.exit(1);
       }
       
       if (ap.getBooleanArg("-debug")) {
          EProperties.debug=true;
-         System.out.println ("Setting root logger to debug.");
-         Logger logger=Logger.getLogger("");
+         System.err.println ("Setting root logger to debug.");
+         Logger logger=(Logger)LoggerFactory.getLogger("");
          logger.setLevel(Level.ALL);
          
-         logger=Logger.getLogger(EProperties.class.getName());
-         logger.setLevel(Level.FINE);
+         logger=(Logger)LoggerFactory.getLogger(EProperties.class.getName());
+         logger.setLevel(Level.DEBUG);
          
-         logger=Logger.getLogger(SubstitutionProcessor.class.getName());
+         logger=(Logger)LoggerFactory.getLogger(SubstitutionProcessor.class.getName());
          logger.setLevel(Level.INFO);
          
-         logger=Logger.getLogger(EPropertiesParser.class.getName());
+         logger=(Logger)LoggerFactory.getLogger(EPropertiesParser.class.getName());
          logger.setLevel(Level.ALL);
       } else {
-         Logger logger=Logger.getLogger("");
+         Logger logger=(Logger)LoggerFactory.getLogger("");
          logger.setLevel(Level.INFO);
       }
       
@@ -67,18 +68,9 @@ public class EPropertiesCLI {
       System.out.println ("\n********************  BEGIN LOAD  *******************");
       props.load(url);
       System.out.println ("********************   END LOAD  *******************\n");
-      
-      
+
       System.out.println ("size: "+props.size());
       System.out.println ("keys: "+props.getKeys().size());
-      
-//      System.out.println ("override_sub="+props.getString("OVERRIDE_SUB"));
-//      System.out.println();
-//      
-//      System.out.println ("find override_sub="+props.findProperty("OVERRIDE_SUB"));
-//      System.out.println();
-//      
-//      System.out.println ("override="+props.getString("OVERRIDE"));
       
       System.out.println ("---- listing ----");
       if (ap.getBooleanArg("-flatten", false))

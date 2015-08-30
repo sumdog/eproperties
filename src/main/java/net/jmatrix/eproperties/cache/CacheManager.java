@@ -9,7 +9,8 @@ import javax.net.ssl.HttpsURLConnection;
 
 import net.jmatrix.eproperties.utils.URLUtil;
 
-import org.apache.commons.logging.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * The CacheManager implements many simple functions necessary for caching
@@ -34,7 +35,7 @@ import org.apache.commons.logging.*;
  *    Default: ${user.home}/.eproperties/cache/
  */
 public class CacheManager {
-   static final Log log=LogFactory.getLog(CacheManager.class);
+   static final Logger log=LoggerFactory.getLogger(CacheManager.class);
    
    static CacheManager instance=null;
    

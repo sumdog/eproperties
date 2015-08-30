@@ -4,6 +4,9 @@ import java.util.*;
 
 import net.jmatrix.eproperties.EProperties;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 /**
  * This class monitors URLs for changes (via URL dependent methods) and will
  * reload the properties if the URLs have changed.  <p>
@@ -15,7 +18,9 @@ import net.jmatrix.eproperties.EProperties;
  *
  */
 public class EPropertiesMonitor extends Thread {
-   
+
+   private static Logger log = LoggerFactory.getLogger(EPropertiesMonitor.class);
+
    /** Singleton instance. */
    private static EPropertiesMonitor instance=null;
    
@@ -48,8 +53,8 @@ public class EPropertiesMonitor extends Thread {
             try {
                synchronized (monitoredProperties) {
                   int size=monitoredProperties.size();
-                  
-                  log("Monitoring "+size+" EProperties objects.");
+
+                  log.debug("Monitoring "+size+" EProperties objects.");
                   
                   for (int i=0; i<size; i++) {
                      EProperties props=monitoredProperties.get(i);
@@ -58,21 +63,12 @@ public class EPropertiesMonitor extends Thread {
                   }
                }
             } catch (Exception ex) {
-               log("Error reloading properties.", ex);
+               log.debug("Error reloading properties.", ex);
             }
          }
       } catch (Throwable t) {
-         log("Error in EPropertiesMonitor!!  Thread is exiting.", t);
+         log.debug("Error in EPropertiesMonitor!!  Thread is exiting.", t);
       }
-   }
-   
-   static final void log(String s) {
-      System.out.println (s);
-   }
-   
-   static final void log(String s, Throwable t) {
-      System.out.println (s);
-      t.printStackTrace();
    }
    
    public static final EPropertiesMonitor getInstance() {

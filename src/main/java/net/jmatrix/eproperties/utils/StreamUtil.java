@@ -19,7 +19,6 @@ public final class StreamUtil
       int bytes=is.read(buffer);
       while (bytes > 0) {
          os.write(buffer, 0, bytes);
-         // System.out.println ("last read: "+bytes+" reading...");
          // SOLVED! -- See jet_net ChunkedInputStream, and 
          // Transfer-Encoding: chunked.  !!
          // pab, 24/7/2003

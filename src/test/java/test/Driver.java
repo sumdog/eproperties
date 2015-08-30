@@ -3,8 +3,6 @@ package test;
 import java.io.*;
 import java.util.Arrays;
 
-import net.jmatrix.eproperties.utils.JDK14LogConfig;
-
 import org.junit.runner.*;
 import org.junit.runner.notification.*;
 
@@ -23,7 +21,6 @@ public class Driver {
     * @param args
     */
    public static void main(String[] args) throws Exception {
-      JDK14LogConfig.startup();
       
       //TestRunner.run(LDAPImplTest.class);
      // JUnitCore.runClasses(LDAPImplTest.class);

@@ -1,5 +1,8 @@
 package net.jmatrix.eproperties.cli;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 /**
  * Simple class for parsing command line arguments out of an argument 
  * list. <p>
@@ -17,6 +20,9 @@ package net.jmatrix.eproperties.cli;
  */
 public class ArgParser
 {
+
+   private Logger log = LoggerFactory.getLogger(ArgParser.class);
+
    String args[]=null;
    
    /**
@@ -66,9 +72,8 @@ public class ArgParser
       try {
          int i=Integer.parseInt(str.trim());
          val=new Integer(i);
-      }
-      catch (NumberFormatException ex) {
-         System.out.println ("NumberFormatException reading "+key+" from "+
+      } catch (NumberFormatException ex) {
+         log.warn("NumberFormatException reading "+key+" from "+
                              "args.");
       }
       return val;

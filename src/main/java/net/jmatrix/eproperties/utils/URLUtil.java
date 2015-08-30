@@ -7,7 +7,8 @@ import java.security.cert.*;
 
 import javax.net.ssl.*;
 
-import org.apache.commons.logging.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import sun.misc.*;
 
@@ -16,7 +17,7 @@ import sun.misc.*;
  * 
  */
 public class URLUtil {
-   public static Log log=LogFactory.getLog(URLUtil.class);
+   public static Logger log= LoggerFactory.getLogger(URLUtil.class);
    
    public static boolean ALLOW_UNTRUSTED_SSL=true;
    

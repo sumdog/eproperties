@@ -117,8 +117,7 @@ public class Key
       }
       else
          ret=false;
-      
-      //System.out.println ("Key.equals ("+key+") == "+obj.toString()+" type="+type+" ? "+ret);
+
       return ret;
    }
 

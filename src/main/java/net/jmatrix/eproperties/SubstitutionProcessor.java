@@ -2,7 +2,8 @@ package net.jmatrix.eproperties;
 
 import java.util.regex.*;
 
-import org.apache.commons.logging.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Static methods used to substitute tokens for values.
@@ -19,7 +20,7 @@ import org.apache.commons.logging.*;
  * you have been warned.  Bemo, 21 July 2009.
  */
 public final class SubstitutionProcessor {
-   static Log log=LogFactory.getLog(SubstitutionProcessor.class);
+   static Logger log= LoggerFactory.getLogger(SubstitutionProcessor.class);
    
    // This was the original (non-functional) regex.
    //static final String TOKEN_REGEX = "\\$\\{.*?\\}";

@@ -3,7 +3,6 @@ package test.net.jmatrix.eproperties.syntax;
 
 import java.io.*;
 import java.util.List;
-import java.util.logging.*;
 
 import net.jmatrix.eproperties.*;
 
@@ -14,13 +13,7 @@ public class TestComments {
 
    @Before
    public void setUp() throws Exception {
-      System.out.println("Setting log level to trace for parser.");
 
-      Logger.getLogger("net.jmatrix").setLevel(Level.FINER);
-      Handler handlers[] = Logger.getLogger("").getHandlers();
-      for (Handler handler : handlers) {
-         handler.setLevel(Level.FINEST);
-      }
    }
 
    @After
@@ -44,11 +37,11 @@ public class TestComments {
       
       System.out.println ("--- list ---");
       props.list(System.out);
-      
+
       Assert.assertTrue("Properties has only 1 element.", props.size()==1);
       Assert.assertTrue("props.get(\"foo\")=bar", props.getString("foo").equals("bar"));
    }
-   
+
    @Test
    public void testCommentInList() throws IOException {
       String pstring=
@@ -56,23 +49,23 @@ public class TestComments {
          "      \"two\",\n"+
          "      #\"three\",\n"+
          "      \"four\")\n";
-      
+
       EProperties props=new EProperties();
 
-      
+
       System.out.println ("---Props file---");
       System.out.println (pstring);
       System.out.println ("---Props file---");
-     
+
       props.load(new StringBufferInputStream(pstring));
-      
+
       System.out.println ("---list---");
       props.list(System.out);
       System.out.println ("---list---");
-      
+
       Assert.assertTrue("3 items in list with 1 commented.", props.getList("list").size() == 3);
    }
-   
+
    @Test
    public void testCommentInList2() throws IOException {
       String pstring=
@@ -80,22 +73,22 @@ public class TestComments {
          "      #\"two\",\n"+
          "      #\"three\",\n"+
          "      \"four\")\n";
-      
+
       EProperties props=new EProperties();
 
-      
+
       System.out.println ("---Props file---");
       System.out.println (pstring);
       System.out.println ("---Props file---");
-     
+
       props.load(new StringBufferInputStream(pstring));
-      
+
       System.out.println ("---list---");
       props.list(System.out);
       System.out.println ("---list---");
       Assert.assertTrue("2 items in list with 2 commented.", props.getList("list").size() == 2);
    }
-   
+
    @Test
    public void testCommentInListWithHashInListValue() throws IOException {
       String pstring=
@@ -103,16 +96,16 @@ public class TestComments {
          "      \"#two\",\n"+
          "      #\"three\",\n"+
          "      \"##four\")\n";
-      
+
       EProperties props=new EProperties();
 
-      
+
       System.out.println ("---Props file---");
       System.out.println (pstring);
       System.out.println ("---Props file---");
-     
+
       props.load(new StringBufferInputStream(pstring));
-      
+
       System.out.println ("---list---");
       props.list(System.out);
       System.out.println ("---list---");

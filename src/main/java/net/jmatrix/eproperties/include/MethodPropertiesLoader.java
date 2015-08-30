@@ -5,13 +5,14 @@ import java.util.*;
 
 import net.jmatrix.eproperties.EProperties;
 
-import org.apache.commons.logging.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  *
  */
 public class MethodPropertiesLoader implements PropertiesLoader {
-   static Log log=LogFactory.getLog(MethodPropertiesLoader.class);
+   static Logger log=LoggerFactory.getLogger(MethodPropertiesLoader.class);
    
    // FIXME: Add method execution URL handler.  Like this:
    // [method://java.net.InetAddress.getLocalHost().getHostName()]

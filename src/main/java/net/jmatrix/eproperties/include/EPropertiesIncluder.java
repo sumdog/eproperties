@@ -4,7 +4,8 @@ import java.util.*;
 
 import net.jmatrix.eproperties.*;
 
-import org.apache.commons.logging.*;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 /** 
@@ -12,7 +13,7 @@ import org.apache.commons.logging.*;
  * loader implementation for various URL formats.  
  */
 public class EPropertiesIncluder {
-   static Log log=LogFactory.getLog(EPropertiesIncluder.class);
+   static Logger log= LoggerFactory.getLogger(EPropertiesIncluder.class);
    List<PropertiesLoader> loaders=new ArrayList<PropertiesLoader>();
    
    PropertiesLoader urlPropsLoader=null;
@@ -60,8 +61,6 @@ public class EPropertiesIncluder {
       // URL.  If the token cannot be found, this will throw a 
       // InvalidIndirectionException()
       // this is new as of 16 feb 2009.
-      //System.out.println ("Parent properties: "+parent);
-      // parent.list(System.out);
       if (SubstitutionProcessor.containsTokens(url))
       url=SubstitutionProcessor.processSubstitution(url, parent);
 

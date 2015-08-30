@@ -6,8 +6,8 @@ import java.lang.reflect.*;
 
 import net.jmatrix.eproperties.EProperties;
 
-import java.util.logging.*;
-import static java.util.logging.Level.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -17,7 +17,7 @@ import static java.util.logging.Level.*;
  */
 public final class InstanceFactory 
 {
-   static final Logger log=Logger.getLogger(InstanceFactory.class.getName());
+   static final Logger log = LoggerFactory.getLogger(InstanceFactory.class);
    
    /** */
    static Map<String, Constructor> constructorCache=new HashMap();
@@ -58,7 +58,7 @@ public final class InstanceFactory
       Object target=null;
       String className=props.getString("class");
 
-      log.log(FINE, "InstanceFactory: building instance of "+className);
+      log.debug("InstanceFactory: building instance of "+className);
       if (className == null) {
          throw new RuntimeException("InstanceFactory: ERROR.  Property "+
                                     "'class' is required.  Inbound "+
@@ -95,7 +95,7 @@ public final class InstanceFactory
       Constructor constructor=constructorCache.get(className);
       
       if (constructor == null) {
-         log.log(FINE, "InstanceFactory: caching constructor for '"+className+"'");
+         log.debug("InstanceFactory: caching constructor for '"+className+"'");
          constructor=buildConstructor(className);
       }
       return constructor;
